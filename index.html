@@ -344,19 +344,49 @@
         }
 
         async function handleImageClick(index) {
-            document.querySelectorAll('.views').forEach(div => {
-                div.style.display = 'block';
+    // Показать информацию о "cool ratio" для всех постов
+    document.querySelectorAll('.views').forEach(div => {
+        div.style.display = 'block';
+    });
+
+    // Запрашиваем новые посты для замены всех, кроме кликнутой
+    setTimeout(async () => {
+        const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+        const tagsQuery = currentTags ? `${currentTags} order:random` : 'order:random';
+        const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': userAgent
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            const newPosts = data.posts;
+
+            // Сохраняем выбранный пост
+            const selectedPost = postsData[index];
+
+            // Обновляем массив postsData, заменяя все посты, кроме выбранного
+            let newPostsIndex = 0;
+            postsData = postsData.map((post, i) => {
+                if (i === index) {
+                    return selectedPost; // Сохраняем выбранный пост
+                }
+                return newPosts[newPostsIndex++] || post; // Заменяем на новый пост или оставляем старый, если новых недостаточно
             });
 
-            const otherIndex = index === 0 ? 1 : 0;
-            setTimeout(async () => {
-                const newPost = await fetchSinglePost();
-                if (newPost) {
-                    postsData[otherIndex] = newPost;
-                    displayPosts(postsData);
-                }
-            }, 1000);
+            // Перерисовываем все посты
+            displayPosts(postsData);
+        } catch (error) {
+            console.error('Error fetching new posts:', error);
+            document.getElementById('errorWarning').textContent = 'Error loading new posts. Please try again.';
         }
+    }, 1000);
+}
     </script>
 </body>
 </html>
