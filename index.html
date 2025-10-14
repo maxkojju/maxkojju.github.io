@@ -219,6 +219,9 @@ img {
 
         function selectDomain() {
             const domainInput = document.getElementById('domainInput').value.trim();
+			if(domainInput != "e621.net")
+				if(domainInput != "e926.net")
+					domainInput = "e926.net";
             if (domainInput) {
                 domain = domainInput;
                 document.getElementById('domainContainer').classList.remove('active');
