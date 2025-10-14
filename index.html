@@ -1,143 +1,319 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Best of e926/e621 Picker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #1a252f;
-            color: #d3d7e0;
-            margin: 0;
-            padding: 20px 3px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow-x: hidden;
-        }
-        .container {
-            max-width: calc(100% - 6px);
-            margin: 0 auto;
-            box-sizing: border-box;
-        }
-        .domain-container, .mode-container, .standard-container, .tinder-container {
-            display: none;
-        }
-        .domain-container.active, .mode-container.active, .standard-container.active, .tinder-container.active {
-            display: block;
-        }
-        .input-container {
-            margin-bottom: 20px;
-        }
-        .domain-input, .tag-input {
-            padding: 8px;
-            font-size: 16px;
-            width: 100%;
-            max-width: 300px;
-            border: 2px solid #3b4a5a;
-            border-radius: 5px;
-            background-color: #2a3b4a;
-            color: #d3d7e0;
-            box-sizing: border-box;
-        }
-        .domain-input:focus, .tag-input:focus {
-            outline: none;
-            border-color: #2a6b9b;
-        }
-        .slider-container {
-            margin: 20px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .slider-label {
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        .slider {
-            width: 200px;
-            accent-color: #2a6b9b;
-        }
-        .post-container {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 20px;
-            justify-content: center;
-        }
-        .post {
-            margin: 10px;
-            position: relative;
-            flex: 0 0 auto;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border: 2px solid #3b4a5a;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .views {
-            display: none;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #d3d7e0;
-            padding: 5px;
-            border-radius: 3px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #2a6b9b;
-            color: #d3d7e0;
-            border: none;
-            border-radius: 5px;
-            margin: 0 10px 10px;
-        }
-        button:hover {
-            background-color: #1e4e75;
-        }
-        .warning {
-            color: #ff4d4d;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-        @media (max-width: 768px) {
-            .post-container {
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #1a252f;
+    color: #d3d7e0;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    position: relative;
+}
+
+#containerWrapper {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.domain-container, .mode-container, .standard-container, .tinder-container {
+    width: 100%;
+    min-height: 100vh; /* Ensure containers take at least full viewport height */
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to top */
+    align-items: center;
+    padding-top: 20px; /* Add padding to prevent content from touching top edge */
+}
+
+.domain-container.active, .mode-container.active, .standard-container.active, .tinder-container.active {
+    display: flex;
+}
+
+.domain-container {
+    background-image: url('https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760458897.png');
+    background-size: auto 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.mode-container {
+    background-image: url('https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760459670.png');
+    background-size: auto 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.domain-container .container, .mode-container .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center vertically for domain/mode containers */
+    align-items: center;
+    padding: 20px;
+}
+
+.standard-container .container, .tinder-container .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to top */
+    align-items: center;
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px; /* Prevent overly wide content */
+}
+
+.domain-container h1, .mode-container h1, .standard-container h1, .tinder-container h1 {
+    margin: 0;
+}
+
+.input-container {
     margin: 20px 0;
-    display: flex; /* Add this */
-    justify-content: center; /* Add this */
-    align-items: center; /* Add this for vertical centering if needed */
+}
+
+.domain-input, .tag-input {
+    padding: 8px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 300px;
+    border: 2px solid #3b4a5a;
+    border-radius: 5px;
+    background-color: #2a3b4a;
+    color: #d3d7e0;
+    box-sizing: border-box;
+}
+
+.domain-input:focus, .tag-input:focus {
+    outline: none;
+    border-color: #2a6b9b;
+}
+
+.slider-container {
+    margin: 5px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slider-label {
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.slider {
+    width: 200px;
+    accent-color: #2a6b9b;
+}
+
+.post-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.post {
+    margin: 10px;
+    position: relative;
+    flex: 0 0 auto;
 }
 
 img {
-	align-items: center; /* Add this for vertical centering if needed */;
     max-width: 100%;
     height: auto;
     border: 2px solid #3b4a5a;
     border-radius: 8px;
-    display: block; /* Add this to treat the image as a block element */
-    margin: 0 auto; /* Add this for horizontal centering */
+    cursor: pointer;
+    max-height: 80vh;
+    object-fit: contain;
 }
-            .domain-input, .tag-input {
-                width: 100%;
-                max-width: calc(100% - 6px);
-            }
-            .slider {
-                width: 100%;
-                max-width: calc(100% - 6px);
-            }
-            button {
-                width: 100px;
-                margin: 5px;
-            }
-        }
-    </style>
+
+.views {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #d3d7e0;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #2a6b9b;
+    color: #d3d7e0;
+    border: none;
+    border-radius: 5px;
+    margin: 0 10px 10px;
+}
+
+button:hover {
+    background-color: #1e4e75;
+}
+
+.warning {
+    color: #ff4d4d;
+    font-weight: bold;
+    margin: 40px 0;
+}
+
+.footer-link {
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    font-size: 16px;
+    text-align: center;
+    display: none;
+}
+
+.footer-link a {
+    color: #f5f7f5;
+    text-decoration: none;
+}
+
+.footer-link a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .footer-link {
+        display: block;
+    }
+
+    .post-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        margin: 20px 0;
+    }
+
+    img {
+        max-width: 100%;
+        max-height: 60vh;
+        height: auto;
+        border: 2px solid #3b4a5a;
+        border-radius: 8px;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .domain-input, .tag-input {
+        width: 100%;
+        max-width: calc(100% - 6px);
+    }
+
+    .slider {
+        width: 100%;
+        max-width: calc(100% - 6px);
+    }
+
+    button {
+        width: 100px;
+        margin: 5px;
+    }
+
+    .domain-container .container, .mode-container .container, .standard-container .container, .tinder-container .container {
+        padding: 10px;
+    }
+}
+
+.support-link {
+    position: fixed;
+    top: 10px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    font-size: 14px;
+    text-align: center;
+    z-index: 1000;
+}
+
+.support-link a {
+    color: #0bd600;
+    text-decoration: none;
+    background: rgba(26, 37, 47, 0.8);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.support-link a:hover {
+    text-decoration: underline;
+}
+
+.tinder-container .post-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+}
+
+.tinder-container img {
+    max-width: ${window.screen.width - 10}px;
+    max-height: ${Math.floor(window.screen.height * 0.6)}px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+</style>
 </head>
 <body>
     <div class="domain-container active" id="domainContainer">
@@ -162,49 +338,56 @@ img {
 
     <div class="standard-container" id="standardContainer">
         <div class="container">
-            <h1>Best of e621/e926 Picker - Standard Mode</h1>
+            <h1>Best of e926 Picker - Standard Mode</h1>
             <p class="warning" id="standardErrorWarning"></p>
             <div class="input-container">
                 <input type="text" class="tag-input" id="standardTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
-                <button onclick="fetchRandomPosts()">Search with Tags</button>
+                <button onclick="fetchRandomPosts()">Search</button>
             </div>
             <div class="slider-container">
                 <label for="postCountSlider" class="slider-label">Posts per page: <span id="postCountValue">2</span></label>
                 <input type="range" class="slider" id="postCountSlider" min="2" max="6" value="2" oninput="updatePostCount(this.value)">
             </div>
-            <button onclick="fetchRandomPosts(true)">Clear Tags and Restart</button>
-            <div class="post-container" id="standardPostContainer"></div>
+                       <div class="post-container" id="standardPostContainer"></div>
         </div>
     </div>
 
-   <div class="tinder-container" id="tinderContainer">
-    <div class="container">
-        <h1>e621 Random Image Viewer - Tinder Mode</h1>
-        <p class="warning" id="tinderErrorWarning"></p>
-        <div class="input-container">
-            <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
-            <button onclick="fetchRandomImage()">Search with Tags</button>
-        </div>
-        <div class="post-container" id="tinderPostContainer"></div>
-        <div class="button-container">
-            <button onclick="saveImage()">Save</button>
-            <button onclick="skipImage()">Skip</button>
+    <div class="tinder-container" id="tinderContainer">
+        <div class="container">
+            <h1>e926 Random Image Viewer - Tinder Mode</h1>
+            <p class="warning" id="tinderErrorWarning"></p>
+            <div class="input-container">
+                <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
+                <button onclick="fetchRandomImage()">Search</button>
+            </div>
+            <div class="post-container" id="tinderPostContainer"></div>
+            <div class="button-container">
+                <button onclick="saveImage()">Save</button>
+                <button onclick="skipImage()">Skip</button>
+            </div>
         </div>
     </div>
-</div>
-<style>
+
+    <div class="footer-link">
+        <a href="https://github.com/maxkojju/maxkojju.github.io/releases">Check out our mobile app</a>
+    </div>
+    <div class="support-link">
+        <a href="https://dalink.to/maxkojju">This platform is ad-free, please support our development</a>
+    </div>
+
+   <style>
 .tinder-container .post-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 50vh; /* Ensure enough space for vertical centering */
+    min-height: 50vh;
 }
 .tinder-container img {
     max-width: ${window.screen.width - 10}px;
     max-height: ${Math.floor(window.screen.height * 0.6)}px;
     width: auto;
     height: auto;
-    object-fit: contain; /* Maintain aspect ratio */
+    object-fit: contain;
     display: block;
 }
 </style>
@@ -217,34 +400,26 @@ img {
         let currentPostTinder = null;
         let currentTagsTinder = '';
 
-        function selectDomain() {
-            const domainInput = document.getElementById('domainInput').value.trim();
-			if (domainInput) {
-                domain = domainInput;
-                document.getElementById('Container').classList.remove('active');
-                document.getElementById('modeContainer').classList.add('active');
-            } else {
-                alert('Please enter a valid domain (e.g. e926.net).');
-            }
-			if(domainInput != "e621.net")
-				if(domainInput != "e926.net"){
-					domain = "e926.net";
-					Debug.log("using e926.net");
-				}
-            
-        }
+       function selectDomain() {
+    let domainInput = document.getElementById('domainInput').value.trim();
+    if (domainInput) {
+        domain = domainInput === 'e621.net' ? domainInput : 'e926.net';
+        document.getElementById('domainContainer').classList.remove('active');
+        document.getElementById('modeContainer').classList.add('active');
+    } else {
+        alert('Please enter a valid domain (e.g. e926.net).');
+    }
+}
 
-        function startStandardMode() {
-            document.getElementById('modeContainer').classList.remove('active');
-            document.getElementById('standardContainer').classList.add('active');
-            fetchRandomPosts();
-        }
+       function startStandardMode() {
+    document.getElementById('modeContainer').classList.remove('active');
+    document.getElementById('standardContainer').classList.add('active');
+}
 
-        function startTinderMode() {
-            document.getElementById('modeContainer').classList.remove('active');
-            document.getElementById('tinderContainer').classList.add('active');
-            fetchRandomImage();
-        }
+function startTinderMode() {
+    document.getElementById('modeContainer').classList.remove('active');
+    document.getElementById('tinderContainer').classList.add('active');
+}
 
         // Standard Mode Scripts
         function updatePostCount(value) {
@@ -357,69 +532,68 @@ img {
         }
 
         // Tinder Mode Scripts
-        // Tinder Mode Scripts
-async function fetchRandomImage() {
-    currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
-    const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-    const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
-    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+        async function fetchRandomImage() {
+            currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
+            const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
+            const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
+            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
 
-    try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': userAgent
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'User-Agent': userAgent
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                if (data.posts && data.posts.length > 0) {
+                    currentPostTinder = data.posts[0];
+                    displayImage(currentPostTinder);
+                } else {
+                    throw new Error('No posts returned');
+                }
+            } catch (error) {
+                console.error('Error fetching image:', error);
+                document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
+                document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
             }
-        });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
         }
-        const data = await response.json();
-        if (data.posts && data.posts.length > 0) {
-            currentPostTinder = data.posts[0];
-            displayImage(currentPostTinder);
-        } else {
-            throw new Error('No posts returned');
+
+        function displayImage(post) {
+            const container = document.getElementById('tinderPostContainer');
+            container.innerHTML = '';
+            document.getElementById('tinderErrorWarning').textContent = '';
+
+            if (post.file && post.file.url) {
+                const img = document.createElement('img');
+                img.src = post.file.url;
+                img.alt = 'Random image';
+                img.style.maxWidth = `${window.screen.width - 10}px`;
+                img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.margin = '0 auto';
+                img.onerror = () => {
+                    img.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
+                };
+                container.appendChild(img);
+            } else {
+                container.innerHTML = '<p>No valid image found.</p>';
+            }
         }
-    } catch (error) {
-        console.error('Error fetching image:', error);
-        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
-        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
-    }
-}
 
-function displayImage(post) {
-    const container = document.getElementById('tinderPostContainer');
-    container.innerHTML = '';
-    document.getElementById('tinderErrorWarning').textContent = '';
+        async function saveImage() {
+            if (currentPostTinder) {
+                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+                await fetchRandomImage();
+            }
+        }
 
-    if (post.file && post.file.url) {
-        const img = document.createElement('img');
-        img.src = post.file.url;
-        img.alt = 'Random image';
-        img.style.maxWidth = `${window.screen.width - 10}px`;
-        img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
-        img.style.height = 'auto'; // Сохраняем соотношение сторон
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-        img.onerror = () => {
-            img.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
-        };
-        container.appendChild(img);
-    } else {
-        container.innerHTML = '<p>No valid image found.</p>';
-    }
-}
-
-async function saveImage() {
-    if (currentPostTinder) {
-        window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
-        await fetchRandomImage();
-    }
-}
-
-async function skipImage() {
-    await fetchRandomImage();
-}
+        async function skipImage() {
+            await fetchRandomImage();
+        }
     </script>
 </body>
 </html>
