@@ -219,16 +219,19 @@ img {
 
         function selectDomain() {
             const domainInput = document.getElementById('domainInput').value.trim();
-			if(domainInput != "e621.net")
-				if(domainInput != "e926.net")
-					domainInput = "e926.net";
-            if (domainInput) {
+			if (domainInput) {
                 domain = domainInput;
                 document.getElementById('domainContainer').classList.remove('active');
                 document.getElementById('modeContainer').classList.add('active');
             } else {
                 alert('Please enter a valid domain (e.g. e926.net).');
             }
+			if(domainInput != "e621.net")
+				if(domainInput != "e926.net"){
+					domain = "e926.net";
+					Debug.log("using e926.net");
+				}
+            
         }
 
         function startStandardMode() {
