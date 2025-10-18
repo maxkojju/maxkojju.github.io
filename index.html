@@ -1,43 +1,44 @@
+
 <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+      return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+    if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+            var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+            var firstSheetName = workbook.SheetNames[0];
+            var worksheet = workbook.Sheets[firstSheetName];
 
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
+            // Convert sheet to JSON to filter blank rows
+            var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+            // Filter out blank rows (rows where all cells are empty, null, or undefined)
+            var filteredData = jsonData.filter(row => row.some(filledCell));
 
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
+            // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+            var headerRowIndex = filteredData.findIndex((row, index) =>
+              row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+            );
+            // Fallback
+            if (headerRowIndex === -1 || headerRowIndex > 25) {
+              headerRowIndex = 0;
             }
+
+            // Convert filtered JSON back to CSV
+            var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+            csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+            return csv;
+        } catch (e) {
+            console.error(e);
+            return "";
         }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+    }
+    return gk_fileData[filename] || "";
+    }
+    </script><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -170,6 +171,11 @@ body {
     margin: 10px;
     position: relative;
     flex: 0 0 auto;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post:hover {
+    transform: translateY(-5px);
 }
 
 img {
@@ -180,6 +186,12 @@ img {
     cursor: pointer;
     max-height: 80vh;
     object-fit: contain;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post:hover img {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .views {
@@ -202,10 +214,70 @@ button {
     border: none;
     border-radius: 5px;
     margin: 0 10px 10px;
+    transition: all 0.3s ease;
 }
 
 button:hover {
     background-color: #1e4e75;
+    transform: translateY(-2px);
+}
+
+.domain-buttons {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.domain-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #2a6b9b;
+    color: #d3d7e0;
+    border: none;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.domain-button:hover {
+    background-color: #1e4e75;
+    transform: translateY(-2px);
+}
+
+.domain-button.unsafe {
+    background-color: #9b2a2a;
+}
+
+.domain-button.unsafe:hover {
+    background-color: #751e1e;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #2a6b9b;
+    color: #d3d7e0;
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+.mode-button:hover {
+    background-color: #1e4e75;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .warning {
@@ -223,11 +295,28 @@ button:hover {
     font-size: 16px;
     text-align: center;
     display: none;
+    width: 90vw; /* Занимает 90% ширины вьюпорта */
+    max-width: 300px; /* Максимальная ширина, чтобы не становился слишком широким */
+    box-sizing: border-box; /* Включает padding и border в ширину */
 }
 
 .footer-link a {
     color: #f5f7f5;
     text-decoration: none;
+    font-size: calc(14px + 0.5vw); /* Базовый размер + увеличение пропорционально ширине экрана */
+    max-font-size: 16px; /* Максимальный размер шрифта (альтернативно можно использовать max() в calc) */
+    /* Используем clamp для более точного контроля: min(макс_размер, calc(база + vw), текущ_размер) не поддерживается везде одинаково,
+       поэтому ограничим размер через max-font-size или просто calc с min/max логикой */
+    font-size: min(16px, calc(14px + 0.5vw)); /* Более современный подход: шрифт растет до 16px */
+    /* Если браузер не поддерживает min(), используйте calc() как указано выше и установите max-font-size */
+    text-decoration: none;
+    word-wrap: break-word; /* Перенос слов при необходимости */
+    word-break: break-word; /* Агрессивный перенос, если break-word не поддерживается */
+    hyphens: auto; /* Добавление дефисов при переносе (опционально) */
+    display: block; /* Делает ссылку блочным элементом для лучшего управления */
+    text-align: center; /* Центрирует текст внутри ссылки */
+    padding: 5px 10px; /* Добавляет внутренние отступы */
+    box-sizing: border-box; /* Включает padding в ширину */
 }
 
 .footer-link a:hover {
@@ -275,6 +364,26 @@ button:hover {
     .domain-container .container, .mode-container .container, .standard-container .container, .tinder-container .container {
         padding: 10px;
     }
+
+    .domain-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .domain-button {
+        width: 200px;
+    }
+
+    .mode-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .mode-button {
+        width: 200px;
+        padding: 12px 24px;
+        font-size: 16px;
+    }
 }
 
 .support-link {
@@ -286,6 +395,14 @@ button:hover {
     font-size: 14px;
     text-align: center;
     z-index: 1000;
+    width: 90vw; /* Занимает 90% ширины вьюпорта */
+    max-width: 500px; /* Максимальная ширина */
+    box-sizing: border-box; /* Включает padding в ширину */
+    left: auto; /* Отменяет left: 0 */
+    right: auto; /* Отменяет right: 0 */
+    margin: 0 auto; /* Центрирует блок по горизонтали */
+    padding: 5px 10px; /* Добавляет внутренние отступы */
+    text-align: center;
 }
 
 .support-link a {
@@ -294,6 +411,18 @@ button:hover {
     background: rgba(26, 37, 47, 0.8);
     padding: 5px 10px;
     border-radius: 5px;
+        font-size: min(14px, calc(12px + 0.4vw)); /* Шрифт уменьшается до 14px, но не больше */
+    /* font-size: calc(12px + 0.4vw); /* Резервный вариант */
+    /* max-font-size: 14px; /* Резервный вариант */
+    word-wrap: break-word; /* Перенос слов */
+    word-break: break-word; /* Агрессивный перенос */
+    hyphens: auto; /* Дефисы при переносе */
+    display: inline-block; /* Позволяет применять width/max-width к ссылке */
+    max-width: 100%; /* Ссылка не шире родителя */
+    box-sizing: border-box; /* Включает padding в ширину */
+    padding: 3px 6px; /* Внутренние отступы */
+    text-align: center; /* Центрирует текст внутри ссылки */
+    /* background и border-radius остаются */
 }
 
 .support-link a:hover {
@@ -315,16 +444,29 @@ button:hover {
     object-fit: contain;
     display: block;
 }
+
+/* Добавленные стили для скрытия элементов */
+.footer-link.hidden, .support-link.hidden {
+    display: none !important;
+}
+
+.hide-button {
+    cursor: pointer;
+    color: #ffa500;
+    font-weight: bold;
+    text-decoration: underline;
+    pointer-events: auto;
+}
 </style>
 </head>
 <body>
     <div class="domain-container active" id="domainContainer">
         <div class="container">
-            <h1>Select Domain</h1>
-            <p>Enter the domain to fetch posts from (e.g., e926.net):</p>
-            <div class="input-container">
-                <input type="text" class="domain-input" id="domainInput" placeholder="e.g., e926.net">
-                <button onclick="selectDomain()">Start</button>
+            <h1>Choose Domain</h1>
+            <p>Select the domain to fetch posts from:</p>
+            <div class="domain-buttons">
+                <button class="domain-button" onclick="selectDomain('e926.net')">e926.net</button>
+                <button class="domain-button unsafe" onclick="selectDomain('e621.net')">e621.net (unsafe)</button>
             </div>
         </div>
         <p class="warning">e926 API is unstable, it may not return any image. sorry for that</p>
@@ -333,8 +475,10 @@ button:hover {
     <div class="mode-container" id="modeContainer">
         <div class="container">
             <h1>Select Mode</h1>
-            <button onclick="startStandardMode()">Standard Mode</button>
-            <button onclick="startTinderMode()">Tinder Mode</button>
+            <div class="mode-buttons">
+                <button class="mode-button" onclick="startStandardMode()">Standard Mode</button>
+                <button class="mode-button" onclick="startTinderMode()">Tinder Mode</button>
+            </div>
         </div>
     </div>
 
@@ -370,11 +514,11 @@ button:hover {
         </div>
     </div>
 
-    <div class="footer-link">
-        <a href="https://github.com/maxkojju/maxkojju.github.io/releases">Check out our mobile app</a>
+    <div class="footer-link" id="footerLink">
+        <a href="https://github.com/maxkojju/maxkojju.github.io/releases" id="footerLinkAnchor">Check out our mobile app <span class="hide-button" onclick="hideElement('footerLink', event)">(no, thanks)</span></a>
     </div>
-    <div class="support-link">
-        <a href="https://dalink.to/maxkojju">This platform is ad-free, please support our development</a>
+    <div class="support-link" id="supportLink">
+        <a href="https://dalink.to/maxkojju" id="supportLinkAnchor">This platform is ad-free, please support our development <span class="hide-button" onclick="hideElement('supportLink', event)">(hide)</span></a>
     </div>
 
    <style>
@@ -402,200 +546,239 @@ button:hover {
         let currentPostTinder = null;
         let currentTagsTinder = '';
 
-       function selectDomain() {
-    let domainInput = document.getElementById('domainInput').value.trim();
-    if (domainInput) {
-        domain = domainInput === 'e621.net' ? domainInput : 'e926.net';
-        document.getElementById('domainContainer').classList.remove('active');
-        document.getElementById('modeContainer').classList.add('active');
+        // Функция для скрытия элементов
+        function hideElement(elementId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.add('hidden');
+            }
+        }
+
+       function selectDomain(selectedDomain) {
+           domain = selectedDomain;
+           document.getElementById('domainContainer').classList.remove('active');
+           document.getElementById('modeContainer').classList.add('active');
+       }
+
+       function startStandardMode() {
+           document.getElementById('modeContainer').classList.remove('active');
+           document.getElementById('standardContainer').classList.add('active');
+       }
+
+       function startTinderMode() {
+           document.getElementById('modeContainer').classList.remove('active');
+           document.getElementById('tinderContainer').classList.add('active');
+       }
+
+        // Standard Mode Scripts
+       function updatePostCount(value) {
+    postsPerPage = parseInt(value);
+    document.getElementById('postCountValue').textContent = postsPerPage;
+    fetchRandomPosts();
+}
+
+async function fetchRandomPosts(clearTags = false) {
+    if (clearTags) {
+        document.getElementById('standardTagInput').value = '';
+        currentTagsStandard = '';
     } else {
-        alert('Please enter a valid domain (e.g. e926.net).');
+        currentTagsStandard = document.getElementById('standardTagInput').value.trim();
+    }
+
+    const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+    const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        postsData = data.posts;
+        displayPosts(postsData);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. try to use VPN or change domain.</p>';
+        document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
     }
 }
 
-       function startStandardMode() {
-    document.getElementById('modeContainer').classList.remove('active');
-    document.getElementById('standardContainer').classList.add('active');
+function displayPosts(posts) {
+    const container = document.getElementById('standardPostContainer');
+    container.innerHTML = '';
+    document.getElementById('standardErrorWarning').textContent = '';
+
+    posts.forEach((post, index) => {
+        if (post.file && post.file.url) {
+            const postDiv = document.createElement('div');
+            postDiv.className = 'post';
+            postDiv.dataset.index = index;
+            const img = document.createElement('img');
+            
+            // Добавляем обработчик ошибок и таймаут загрузки
+            setupImageWithTimeout(img, post.file.url, index, 'standard');
+            
+            const viewsDiv = document.createElement('div');
+            viewsDiv.className = 'views';
+            const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
+            viewsDiv.textContent = `cool ratio: ${ratio}`;
+            const viewButton = document.createElement('div');
+            viewButton.textContent = 'View on site';
+            viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
+            postDiv.appendChild(img);
+            postDiv.appendChild(viewsDiv);
+            postDiv.appendChild(viewButton);
+            img.addEventListener('click', () => handleImageClick(index));
+            container.appendChild(postDiv);
+        }
+    });
 }
 
-function startTinderMode() {
-    document.getElementById('modeContainer').classList.remove('active');
-    document.getElementById('tinderContainer').classList.add('active');
+// Функция для настройки изображения с таймаутом
+function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
+    const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+    let imageLoaded = false;
+    
+    // Таймаут 5 секунд
+    const timeoutId = setTimeout(() => {
+        if (!imageLoaded) {
+            console.log(`Image loading timeout for ${imageUrl}`);
+            imgElement.src = placeholderUrl;
+            imgElement.alt = 'Image failed to load';
+        }
+    }, 10000);
+    
+    // Обработчик успешной загрузки
+    imgElement.onload = function() {
+        imageLoaded = true;
+        clearTimeout(timeoutId);
+    };
+    
+    // Обработчик ошибки загрузки
+    imgElement.onerror = function() {
+        imageLoaded = true;
+        clearTimeout(timeoutId);
+        imgElement.src = placeholderUrl;
+        imgElement.alt = 'Image not available';
+    };
+    
+    // Начинаем загрузку
+    imgElement.src = imageUrl;
+    imgElement.alt = 'Post image';
 }
 
-        // Standard Mode Scripts
-        function updatePostCount(value) {
-            postsPerPage = parseInt(value);
-            document.getElementById('postCountValue').textContent = postsPerPage;
-            fetchRandomPosts();
-        }
+async function handleImageClick(index) {
+    document.querySelectorAll('.views').forEach(div => {
+        div.style.display = 'block';
+    });
 
-        async function fetchRandomPosts(clearTags = false) {
-            if (clearTags) {
-                document.getElementById('standardTagInput').value = '';
-                currentTagsStandard = '';
-            } else {
-                currentTagsStandard = document.getElementById('standardTagInput').value.trim();
-            }
+    setTimeout(async () => {
+        const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+        const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+        const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
 
-            const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-            const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'User-Agent': userAgent
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                postsData = data.posts;
-                displayPosts(postsData);
-            } catch (error) {
-                console.error('Error fetching posts:', error);
-                document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. try to use VPN or change domain.</p>';
-                document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
-            }
-        }
-
-        function displayPosts(posts) {
-            const container = document.getElementById('standardPostContainer');
-            container.innerHTML = '';
-            document.getElementById('standardErrorWarning').textContent = '';
-
-            posts.forEach((post, index) => {
-                if (post.file && post.file.url) {
-                    const postDiv = document.createElement('div');
-                    postDiv.className = 'post';
-                    postDiv.dataset.index = index;
-                    const img = document.createElement('img');
-                    img.src = post.file.url;
-                    img.alt = 'Post image';
-                    img.onerror = () => {
-                        img.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
-                    };
-                    const viewsDiv = document.createElement('div');
-                    viewsDiv.className = 'views';
-                    const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
-                    viewsDiv.textContent = `cool ratio: ${ratio}`;
-                    const viewButton = document.createElement('div');
-                    viewButton.textContent = 'View on site';
-                    viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
-                    postDiv.appendChild(img);
-                    postDiv.appendChild(viewsDiv);
-                    postDiv.appendChild(viewButton);
-                    img.addEventListener('click', () => handleImageClick(index));
-                    container.appendChild(postDiv);
+        try {
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': userAgent
                 }
             });
-        }
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            const newPosts = data.posts;
 
-        async function handleImageClick(index) {
-            document.querySelectorAll('.views').forEach(div => {
-                div.style.display = 'block';
+            const selectedPost = postsData[index];
+
+            let newPostsIndex = 0;
+            postsData = postsData.map((post, i) => {
+                if (i === index) {
+                    return selectedPost;
+                }
+                return newPosts[newPostsIndex++] || post;
             });
 
-            setTimeout(async () => {
-                const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-                const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-                const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        headers: {
-                            'User-Agent': userAgent
-                        }
-                    });
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    const data = await response.json();
-                    const newPosts = data.posts;
-
-                    const selectedPost = postsData[index];
-
-                    let newPostsIndex = 0;
-                    postsData = postsData.map((post, i) => {
-                        if (i === index) {
-                            return selectedPost;
-                        }
-                        return newPosts[newPostsIndex++] || post;
-                    });
-
-                    displayPosts(postsData);
-                } catch (error) {
-                    console.error('Error fetching new posts:', error);
-                    document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
-                }
-            }, 1000);
+            displayPosts(postsData);
+        } catch (error) {
+            console.error('Error fetching new posts:', error);
+            document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
+    }, 1000);
+}
 
         // Tinder Mode Scripts
         async function fetchRandomImage() {
-            currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
-            const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-            const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
-            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+    currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
+    const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
+    const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
+    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
 
-            try {
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'User-Agent': userAgent
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                if (data.posts && data.posts.length > 0) {
-                    currentPostTinder = data.posts[0];
-                    displayImage(currentPostTinder);
-                } else {
-                    throw new Error('No posts returned');
-                }
-            } catch (error) {
-                console.error('Error fetching image:', error);
-                document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
-                document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
             }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
-
-        function displayImage(post) {
-            const container = document.getElementById('tinderPostContainer');
-            container.innerHTML = '';
-            document.getElementById('tinderErrorWarning').textContent = '';
-
-            if (post.file && post.file.url) {
-                const img = document.createElement('img');
-                img.src = post.file.url;
-                img.alt = 'Random image';
-                img.style.maxWidth = `${window.screen.width - 10}px`;
-                img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
-                img.style.height = 'auto';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                img.onerror = () => {
-                    img.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
-                };
-                container.appendChild(img);
-            } else {
-                container.innerHTML = '<p>No valid image found.</p>';
-            }
+        const data = await response.json();
+        if (data.posts && data.posts.length > 0) {
+            currentPostTinder = data.posts[0];
+            displayImage(currentPostTinder);
+        } else {
+            throw new Error('No posts returned');
         }
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
+        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
+    }
+}
 
-        async function saveImage() {
-            if (currentPostTinder) {
-                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
-                await fetchRandomImage();
-            }
-        }
+function displayImage(post) {
+    const container = document.getElementById('tinderPostContainer');
+    container.innerHTML = '';
+    document.getElementById('tinderErrorWarning').textContent = '';
 
-        async function skipImage() {
-            await fetchRandomImage();
-        }
+    if (post.file && post.file.url) {
+        const img = document.createElement('img');
+        img.style.maxWidth = `${window.screen.width - 10}px`;
+        img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+        
+        // Используем ту же функцию настройки изображения с таймаутом
+        setupImageWithTimeout(img, post.file.url, 0, 'tinder');
+        
+        container.appendChild(img);
+    } else {
+        container.innerHTML = '<p>No valid image found.</p>';
+    }
+}
+
+async function saveImage() {
+    if (currentPostTinder) {
+        window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+        await fetchRandomImage();
+    }
+}
+
+async function skipImage() {
+    await fetchRandomImage();
+}
     </script>
 </body>
 </html>
+
