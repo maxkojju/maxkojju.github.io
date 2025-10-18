@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best of E6 Troubleshooting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background-color: #012e57;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            margin-bottom: 8px;
+            color: white;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.7;
+            font-weight: 300;
+        }
+        
+        .intro {
+            margin-bottom: 30px;
+            font-size: 1.05rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+        
+        .issue {
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .issue:last-child {
+            border-bottom: none;
+        }
+        
+        .issue-title {
+            font-size: 1.3rem;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 400;
+        }
+        
+        .solution {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .solution-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #64b5f6;
+        }
+        
+        .placeholder {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            text-align: center;
+            margin: 15px 0;
+            border-radius: 4px;
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        .placeholder-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .quote {
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #ccc;
+        }
+        
+        .contact {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        
+        .email {
+            display: inline-block;
+            color: #64b5f6;
+            margin-top: 10px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .email:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.6;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .issue-title {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Best of E6 Troubleshooting</h1>
+            <p class="subtitle">Solutions to common problems</p>
+        </header>
+        
+        <p class="intro">If the website isn't working properly, here are the most common problems and their solutions:</p>
+        
+        <div class="issue">
+            <h2 class="issue-title">Images don't load</h2>
+            <p>If images don't load, you'll see error text or this placeholder:</p>
+            <div class="placeholder">
+                <img src="https://github.com/maxkojju/maxkojju.github.io/blob/main/placeHolder.png?raw=true" alt="Placeholder image" class="placeholder-image">
+            </div>
+        </div>
+        
+        <div class="issue">
+            <h2 class="issue-title">Images from E926 do not load</h2>
+            <p>The E926 API is very unstable.</p>
+            <div class="solution">
+                <p class="solution-title">Solution</p>
+                <p>Try using VPN or select E621 and add "rating:s" to the tags.</p>
+            </div>
+        </div>
+        
+        <div class="issue">
+            <h2 class="issue-title">Images from E621 are not loaded</h2>
+            <p>Your internet connection is probably too slow or E621 is blocked in your region.</p>
+            <div class="solution">
+                <p class="solution-title">Solution</p>
+                <p>Try turning on the VPN or changing the network.</p>
+            </div>
+        </div>
+        
+        <div class="issue">
+            <h2 class="issue-title">The mobile app opens the links crookedly</h2>
+            <div class="quote">
+                The solution is not to use the mobile app. It's shit and it's suitable in a narrow range of situations.
+            </div>
+        </div>
+        
+        <div class="issue">
+            <h2 class="issue-title">The site is not loading</h2>
+            <p>I don't know how you got to this page.</p>
+            <div class="solution">
+                <p class="solution-title">Solution</p>
+                <p>Try to enable VPN or open it using another link: <strong>maxkojju.github.io</strong></p>
+            </div>
+        </div>
+        
+        <div class="contact">
+            <h3>Still having problems?</h3>
+            <p>Write to our support email:</p>
+            <a href="mailto:sailormoon12062010@gmail.com" class="email">sailormoon12062010@gmail.com</a>
+            <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">We think this email is perfect for such a site.</p>
+        </div>
+        
+        <footer>
+            <p>Best of E6 Troubleshooting Guide</p>
+        </footer>
+    </div>
+</body>
+</html>
