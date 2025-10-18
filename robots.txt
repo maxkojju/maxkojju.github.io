@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://bestofe6.ru/sitemap.xml
