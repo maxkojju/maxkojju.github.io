@@ -122,7 +122,32 @@ body {
 .domain-container h1, .mode-container h1, .standard-container h1, .tinder-container h1 {
     margin: 0;
 }
+.nav-buttons.hidden {
+    display: none !important;
+}
+.nav-buttons {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000; /* Добавьте z-index */
+}
 
+/* Обновите стиль footer-link */
+.footer-link {
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    font-size: 16px;
+    text-align: center;
+    display: none; /* По умолчанию скрыто */
+    width: 90vw;
+    max-width: 300px;
+    box-sizing: border-box;
+}
 .input-container {
     margin: 20px 0;
 }
@@ -352,7 +377,7 @@ button:hover {
 
 @media (max-width: 768px) {
     .footer-link {
-        display: block;
+        display: none; /* Измените с block на none */
     }
 
     .post-container {
@@ -553,8 +578,14 @@ button:hover {
     right: 10px;
     display: flex;
     gap: 10px;
+    z-index: 1000;
+    /* Добавляем начальное состояние - скрыты */
+    display: none;
 }
 
+.nav-buttons:not(.hidden) {
+    display: flex;
+}
 .nav-button {
     padding: 8px 16px;
     font-size: 14px;
@@ -603,7 +634,7 @@ button:hover {
 
     <div class="standard-container" id="standardContainer">
         <div class="container">
-            <h1>Best of e926 Picker - Standard Mode</h1>
+            <h1></h1>
             <p class="warning" id="standardErrorWarning"></p>
             <div class="input-container">
                 <input type="text" class="tag-input" id="standardTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
@@ -619,7 +650,7 @@ button:hover {
 
     <div class="tinder-container" id="tinderContainer">
         <div class="container">
-            <h1>e926 Random Image Viewer - Tinder Mode</h1>
+            <h1></h1>
             <p class="warning" id="tinderErrorWarning"></p>
             <div class="input-container">
                 <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
@@ -656,84 +687,61 @@ button:hover {
         </div>
     </div>
 
-    <script>
-        let domain = 'e621.net';
-        let postsData = [];
-        let currentTagsStandard = '';
-        let postsPerPage = 2;
-        let currentPostTinder = null;
-        let currentTagsTinder = '';
+   <script>
+let domain = 'e621.net';
+let postsData = [];
+let currentTagsStandard = '';
+let postsPerPage = 2;
+let currentPostTinder = null;
+let currentTagsTinder = '';
 
-        function hideElement(elementId, event) {
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.classList.add('hidden');
-            }
-        }
-
-        function hideFixLink() {
-            const fixLink = document.getElementById('fixLink');
-            if (fixLink) {
-                fixLink.classList.add('hidden');
-            }
-        }
-
-        function selectDomain(selectedDomain) {
-            domain = selectedDomain;
-            document.getElementById('domainContainer').classList.remove('active');
-            document.getElementById('modeContainer').classList.add('active');
-        }
-
-        function startStandardMode() {
-            document.getElementById('modeContainer').classList.remove('active');
-            document.getElementById('standardContainer').classList.add('active');
-            hideFixLink();
-        }
-
-        function startTinderMode() {
-            document.getElementById('modeContainer').classList.remove('active');
-            document.getElementById('tinderContainer').classList.add('active');
-            hideFixLink();
-        }
-
-        // Cookie handling functions
-        function setCookie(name, value, days = 30) {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 10000));
-    document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+// Utility to check if running locally
+function isLocalEnvironment() {
+    return window.location.protocol === 'file:';
 }
-        function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-        try {
-            return JSON.parse(decodeURIComponent(parts.pop().split(';').shift()));
-        } catch (e) {
-            console.error('Error parsing cookie:', e);
-            return null;
-        }
+
+// LocalStorage handling functions
+function setLocalStorage(name, value) {
+    try {
+        localStorage.setItem(name, JSON.stringify(value));
+        console.log(`Saved to localStorage: ${name}`);
+    } catch (e) {
+        console.error('Error saving to localStorage:', e);
+        alert('Failed to save data. LocalStorage may be full or disabled.');
     }
-    return null;
 }
 
-        function clearCookies() {
-            document.cookie.split(';').forEach(cookie => {
-                const name = cookie.split('=')[0].trim();
-                document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-            });
-            alert('All cookies cleared.');
-            displaySavedPics();
-        }
+function getLocalStorage(name) {
+    try {
+        const value = localStorage.getItem(name);
+        return value ? JSON.parse(value) : null;
+    } catch (e) {
+        console.error('Error parsing localStorage:', e);
+        return null;
+    }
+}
 
-        function saveImageToCookies(post) {
-    if (!post || !post.file || !post.file.url) return;
-    let savedPics = getCookie('savedPics') || [];
-    
-    // Проверяем, существует ли уже это изображение
+function clearLocalStorage() {
+    try {
+        localStorage.clear();
+        alert('All localStorage cleared.');
+        displaySavedPics();
+    } catch (e) {
+        console.error('Error clearing localStorage:', e);
+        alert('Failed to clear localStorage.');
+    }
+}
+
+function saveImageToStorage(post) {
+    if (!post || !post.id || !post.file || !post.file.url) {
+        console.error('Invalid post data for saving:', post);
+        alert('Cannot save image: Invalid or missing data.');
+        return false;
+    }
+
+    let savedPics = getLocalStorage('savedPics') || [];
+
+    // Check if image already exists
     if (!savedPics.some(pic => pic.id === post.id)) {
         savedPics.push({
             id: post.id,
@@ -743,44 +751,44 @@ button:hover {
             score: post.score || {},
             fav_count: post.fav_count || 0
         });
-        setCookie('savedPics', savedPics);
-        console.log('Image saved to cookies:', post.id);
+        setLocalStorage('savedPics', savedPics);
+        console.log('Image saved:', post.id);
+        return true;
     } else {
         console.log('Image already saved:', post.id);
+        return false;
     }
 }
 
-        // Modal handling functions
-        function openSavedPics() {
-            const modal = document.getElementById('savedPicsModal');
-            modal.style.display = 'flex';
-            displaySavedPics();
-        }
+// Modal handling functions
+function openSavedPics() {
+    const modal = document.getElementById('savedPicsModal');
+    modal.style.display = 'flex';
+    displaySavedPics();
+}
 
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'flex';
-        }
+function openSettings() {
+    document.getElementById('settingsModal').style.display = 'flex';
+}
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
 
-        function displaySavedPics() {
+function displaySavedPics() {
     const container = document.getElementById('savedPicsContainer');
     container.innerHTML = '';
-    const savedPics = getCookie('savedPics') || [];
-    
-    console.log('Saved pics from cookies:', savedPics); // Для отладки
-    
+    const savedPics = getLocalStorage('savedPics') || [];
+
     if (savedPics.length === 0) {
         container.innerHTML = '<p>No saved pictures yet.</p>';
         return;
     }
-    
+
     savedPics.forEach((pic, index) => {
         const picDiv = document.createElement('div');
         picDiv.className = 'saved-pic';
-        
+
         const img = document.createElement('img');
         img.src = pic.url;
         img.alt = 'Saved image';
@@ -788,15 +796,14 @@ button:hover {
         img.style.height = 'auto';
         img.style.borderRadius = '5px';
         img.style.cursor = 'pointer';
-        
-        // Обработка ошибок загрузки изображения
+
         img.onerror = function() {
             console.log('Failed to load saved image:', pic.url);
             img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
         };
-        
+
         img.addEventListener('click', () => window.open(`https://${pic.domain}/posts/${pic.id}`, '_blank'));
-        
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-pic';
         removeBtn.textContent = 'X';
@@ -804,210 +811,274 @@ button:hover {
             e.stopPropagation();
             removeSavedPic(pic.id);
         };
-        
+
         picDiv.appendChild(img);
         picDiv.appendChild(removeBtn);
         container.appendChild(picDiv);
     });
 }
 
-        function removeSavedPic(id) {
-            let savedPics = getCookie('savedPics') || [];
-            savedPics = savedPics.filter(pic => pic.id !== id);
-            setCookie('savedPics', savedPics);
-            displaySavedPics();
-        }
+function removeSavedPic(id) {
+    let savedPics = getLocalStorage('savedPics') || [];
+    savedPics = savedPics.filter(pic => pic.id !== id);
+    setLocalStorage('savedPics', savedPics);
+    displaySavedPics();
+}
 
-        // Standard Mode Scripts
-        function updatePostCount(value) {
-            postsPerPage = parseInt(value);
-            document.getElementById('postCountValue').textContent = postsPerPage;
-            fetchRandomPosts();
-        }
+// Standard Mode Scripts
+function updatePostCount(value) {
+    postsPerPage = parseInt(value);
+    document.getElementById('postCountValue').textContent = postsPerPage;
+    fetchRandomPosts();
+}
 
-        async function fetchRandomPosts(clearTags = false) {
-            if (clearTags) {
-                document.getElementById('standardTagInput').value = '';
-                currentTagsStandard = '';
-            } else {
-                currentTagsStandard = document.getElementById('standardTagInput').value.trim();
+async function fetchRandomPosts(clearTags = false) {
+    
+
+    if (clearTags) {
+        document.getElementById('standardTagInput').value = '';
+        currentTagsStandard = '';
+    } else {
+        currentTagsStandard = document.getElementById('standardTagInput').value.trim();
+    }
+
+    const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+    const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
             }
-
-            const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-            const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'User-Agent': userAgent
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                postsData = data.posts;
-                displayPosts(postsData);
-            } catch (error) {
-                console.error('Error fetching posts:', error);
-                document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. try to use VPN or change domain.</p>';
-                document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
-            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        const data = await response.json();
+        postsData = data.posts || [];
+        if (postsData.length === 0) {
+            throw new Error('No posts returned from API');
+        }
+        displayPosts(postsData);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. Try using a VPN or changing the domain.</p>';
+        document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
+    }
+}
 
-        function displayPosts(posts) {
-            const container = document.getElementById('standardPostContainer');
-            container.innerHTML = '';
-            document.getElementById('standardErrorWarning').textContent = '';
+function displayPosts(posts) {
+    const container = document.getElementById('standardPostContainer');
+    container.innerHTML = '';
+    document.getElementById('standardErrorWarning').textContent = '';
 
-            posts.forEach((post, index) => {
-                if (post.file && post.file.url) {
-                    const postDiv = document.createElement('div');
-                    postDiv.className = 'post';
-                    postDiv.dataset.index = index;
-                    const img = document.createElement('img');
-                    setupImageWithTimeout(img, post.file.url, index, 'standard');
-                    const viewsDiv = document.createElement('div');
-                    viewsDiv.className = 'views';
-                    const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
-                    viewsDiv.textContent = `cool ratio: ${ratio}`;
-                    const viewButton = document.createElement('div');
-                    viewButton.textContent = 'View on site';
-                    viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
-                    postDiv.appendChild(img);
-                    postDiv.appendChild(viewsDiv);
-                    postDiv.appendChild(viewButton);
-                    img.addEventListener('click', () => handleImageClick(index));
-                    container.appendChild(postDiv);
+    posts.forEach((post, index) => {
+        if (post.file && post.file.url) {
+            const postDiv = document.createElement('div');
+            postDiv.className = 'post';
+            postDiv.dataset.index = index;
+            const img = document.createElement('img');
+            setupImageWithTimeout(img, post.file.url, index, 'standard');
+            const viewsDiv = document.createElement('div');
+            viewsDiv.className = 'views';
+            const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
+            viewsDiv.textContent = `cool ratio: ${ratio}`;
+            const viewButton = document.createElement('div');
+            viewButton.textContent = 'View on site';
+            viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
+            postDiv.appendChild(img);
+            postDiv.appendChild(viewsDiv);
+            postDiv.appendChild(viewButton);
+            img.addEventListener('click', () => handleImageClick(index));
+            container.appendChild(postDiv);
+        }
+    });
+}
+
+function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
+    const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+    let imageLoaded = false;
+    const timeoutId = setTimeout(() => {
+        if (!imageLoaded) {
+            console.log(`Image loading timeout for ${imageUrl}`);
+            imgElement.src = placeholderUrl;
+            imgElement.alt = 'Image failed to load';
+        }
+    }, 100000);
+    imgElement.onload = function() {
+        imageLoaded = true;
+        clearTimeout(timeoutId);
+    };
+    imgElement.onerror = function() {
+        imageLoaded = true;
+        clearTimeout(timeoutId);
+        imgElement.src = placeholderUrl;
+        imgElement.alt = 'Image not available';
+    };
+    imgElement.src = imageUrl;
+    imgElement.alt = 'Post image';
+}
+
+async function handleImageClick(index) {
+    document.querySelectorAll('.views').forEach(div => {
+        div.style.display = 'block';
+    });
+
+    const post = postsData[index];
+    if (saveImageToStorage(post)) {
+        console.log('Image saved successfully:', post.id);
+    } else {
+        console.log('Image not saved (already exists or invalid):', post.id);
+    }
+
+    setTimeout(async () => {
+        
+
+        const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+        const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+        const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': userAgent
                 }
             });
-        }
-
-        function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
-            const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
-            let imageLoaded = false;
-            const timeoutId = setTimeout(() => {
-                if (!imageLoaded) {
-                    console.log(`Image loading timeout for ${imageUrl}`);
-                    imgElement.src = placeholderUrl;
-                    imgElement.alt = 'Image failed to load';
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            const newPosts = data.posts || [];
+            const selectedPost = postsData[index];
+            let newPostsIndex = 0;
+            postsData = postsData.map((post, i) => {
+                if (i === index) {
+                    return selectedPost;
                 }
-            }, 10000);
-            imgElement.onload = function() {
-                imageLoaded = true;
-                clearTimeout(timeoutId);
-            };
-            imgElement.onerror = function() {
-                imageLoaded = true;
-                clearTimeout(timeoutId);
-                imgElement.src = placeholderUrl;
-                imgElement.alt = 'Image not available';
-            };
-            imgElement.src = imageUrl;
-            imgElement.alt = 'Post image';
-        }
-
-        async function handleImageClick(index) {
-            document.querySelectorAll('.views').forEach(div => {
-                div.style.display = 'block';
+                return newPosts[newPostsIndex++] || post;
             });
-         console.log('Image clicked, saving to cookies...', postsData[index].id);
-            saveImageToCookies(postsData[index]);
-
-            setTimeout(async () => {
-                const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-                const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-                const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        headers: {
-                            'User-Agent': userAgent
-                        }
-                    });
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    const data = await response.json();
-                    const newPosts = data.posts;
-                    const selectedPost = postsData[index];
-                    let newPostsIndex = 0;
-                    postsData = postsData.map((post, i) => {
-                        if (i === index) {
-                            return selectedPost;
-                        }
-                        return newPosts[newPostsIndex++] || post;
-                    });
-                    displayPosts(postsData);
-                } catch (error) {
-                    console.error('Error fetching new posts:', error);
-                    document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
-                }
-            }, 1000);
+            displayPosts(postsData);
+        } catch (error) {
+            console.error('Error fetching new posts:', error);
+            document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
+    }, 10000);
+}
 
-        // Tinder Mode Scripts
-        async function fetchRandomImage() {
-            currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
-            const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-            const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
-            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+// Tinder Mode Scripts
+async function fetchRandomImage() {
 
-            try {
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'User-Agent': userAgent
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                if (data.posts && data.posts.length > 0) {
-                    currentPostTinder = data.posts[0];
-                    displayImage(currentPostTinder);
-                } else {
-                    throw new Error('No posts returned');
-                }
-            } catch (error) {
-                console.error('Error fetching image:', error);
-                document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
-                document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
+
+    currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
+    const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
+    const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
+    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
             }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
-        function displayImage(post) {
-            const container = document.getElementById('tinderPostContainer');
-            container.innerHTML = '';
-            document.getElementById('tinderErrorWarning').textContent = '';
-
-            if (post.file && post.file.url) {
-                const img = document.createElement('img');
-                img.style.maxWidth = `${window.screen.width - 10}px`;
-                img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
-                img.style.height = 'auto';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                setupImageWithTimeout(img, post.file.url, 0, 'tinder');
-                container.appendChild(img);
-            } else {
-                container.innerHTML = '<p>No valid image found.</p>';
-            }
+        const data = await response.json();
+        if (data.posts && data.posts.length > 0) {
+            currentPostTinder = data.posts[0];
+            displayImage(currentPostTinder);
+        } else {
+            throw new Error('No posts returned');
         }
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
+        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
+    }
+}
 
-        async function saveImage() {
-            if (currentPostTinder) {
-             console.log('Saving image to cookies...', currentPostTinder.id);
-                saveImageToCookies(currentPostTinder);
-                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
-                await fetchRandomImage();
-            }
-        }
+function displayImage(post) {
+    const container = document.getElementById('tinderPostContainer');
+    container.innerHTML = '';
+    document.getElementById('tinderErrorWarning').textContent = '';
 
-        async function skipImage() {
-            await fetchRandomImage();
+    if (post.file && post.file.url) {
+        const img = document.createElement('img');
+        img.style.maxWidth = `${window.screen.width - 10}px`;
+        img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+        setupImageWithTimeout(img, post.file.url, 0, 'tinder');
+        container.appendChild(img);
+    } else {
+        container.innerHTML = '<p>No valid image found.</p>';
+    }
+}
+
+async function saveImage() {
+    if (currentPostTinder) {
+        if (saveImageToStorage(currentPostTinder)) {
+            console.log('Image saved successfully:', currentPostTinder.id);
+            window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+        } else {
+            console.log('Image not saved (already exists or invalid):', currentPostTinder.id);
         }
-    </script>
+        await fetchRandomImage();
+    } else {
+        console.error('No current post to save in Tinder mode');
+        document.getElementById('tinderErrorWarning').textContent = 'No image to save. Please try again.';
+    }
+}
+
+async function skipImage() {
+    await fetchRandomImage();
+}
+
+function hideElement(elementId, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.classList.add('hidden');
+    }
+}
+
+function hideFixLink() {
+    const fixLink = document.getElementById('fixLink');
+    if (fixLink) {
+        fixLink.classList.add('hidden');
+    }
+}
+
+function selectDomain(selectedDomain) {
+    domain = selectedDomain;
+    document.getElementById('domainContainer').classList.remove('active');
+    document.getElementById('modeContainer').classList.add('active');
+    // УБИРАЕМ скрытие кнопок здесь - они должны оставаться видимыми
+    // document.querySelector('.nav-buttons').classList.add('hidden');
+}
+
+function startStandardMode() {
+    document.getElementById('modeContainer').classList.remove('active');
+    document.getElementById('standardContainer').classList.add('active');
+    hideFixLink();
+    // Теперь скрываем кнопки только при старте режима
+    document.querySelector('.nav-buttons').classList.remove('hidden');
+    document.getElementById('footerLink').style.display = 'block';
+}
+
+function startTinderMode() {
+    document.getElementById('modeContainer').classList.remove('active');
+    document.getElementById('tinderContainer').classList.add('active');
+    hideFixLink();
+    // Теперь скрываем кнопки только при старте режима
+    document.querySelector('.nav-buttons').classList.remove('hidden');
+    document.getElementById('footerLink').style.display = 'block';
+}
+</script>
 </body>
 </html>
