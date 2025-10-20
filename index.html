@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,15 +46,10 @@
     <meta name="description" content="Best of e6 - Discover amazing furry artworks from e621 and e926. Browse SFW and NSWF content without ads. Random post picker with standard and tinder modes.">
     <meta name="keywords" content="e621, e926, furry, artwork, random posts, image picker">
     <meta name="robots" content="index, follow">
-    <!-- Базовые favicon -->
     <link rel="icon" type="image/x-icon" href="https://bestofe6.ru//favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="https://bestofe6.ru//favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="https://bestofe6.ru//favicon-16x16.png">
-
-<!-- Для Apple устройств -->
     <link rel="apple-touch-icon" sizes="180x180" href="https://bestofe6.ru//apple-touch-icon.png">
-
-<!-- Цвет темы браузера -->
     <meta name="theme-color" content="#1a252f">
     <style>
 body {
@@ -39,12 +73,12 @@ body {
 
 .domain-container, .mode-container, .standard-container, .tinder-container {
     width: 100%;
-    min-height: 100vh; /* Ensure containers take at least full viewport height */
+    min-height: 100vh;
     display: none;
     flex-direction: column;
-    justify-content: flex-start; /* Align content to top */
+    justify-content: flex-start;
     align-items: center;
-    padding-top: 20px; /* Add padding to prevent content from touching top edge */
+    padding-top: 20px;
 }
 
 .domain-container.active, .mode-container.active, .standard-container.active, .tinder-container.active {
@@ -69,7 +103,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Center vertically for domain/mode containers */
+    justify-content: center;
     align-items: center;
     padding: 20px;
 }
@@ -78,11 +112,11 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Align content to top */
+    justify-content: flex-start;
     align-items: center;
     padding: 20px;
     width: 100%;
-    max-width: 1200px; /* Prevent overly wide content */
+    max-width: 1200px;
 }
 
 .domain-container h1, .mode-container h1, .standard-container h1, .tinder-container h1 {
@@ -266,35 +300,28 @@ button:hover {
     font-size: 16px;
     text-align: center;
     display: none;
-    width: 90vw; /* Занимает 90% ширины вьюпорта */
-    max-width: 300px; /* Максимальная ширина, чтобы не становился слишком широким */
-    box-sizing: border-box; /* Включает padding и border в ширину */
+    width: 90vw;
+    max-width: 300px;
+    box-sizing: border-box;
 }
 
 .footer-link a {
     color: #f5f7f5;
     text-decoration: none;
-    font-size: calc(14px + 0.5vw); /* Базовый размер + увеличение пропорционально ширине экрана */
-    max-font-size: 16px; /* Максимальный размер шрифта (альтернативно можно использовать max() в calc) */
-    /* Используем clamp для более точного контроля: min(макс_размер, calc(база + vw), текущ_размер) не поддерживается везде одинаково,
-       поэтому ограничим размер через max-font-size или просто calc с min/max логикой */
-    font-size: min(16px, calc(14px + 0.5vw)); /* Более современный подход: шрифт растет до 16px */
-    /* Если браузер не поддерживает min(), используйте calc() как указано выше и установите max-font-size */
-    text-decoration: none;
-    word-wrap: break-word; /* Перенос слов при необходимости */
-    word-break: break-word; /* Агрессивный перенос, если break-word не поддерживается */
-    hyphens: auto; /* Добавление дефисов при переносе (опционально) */
-    display: block; /* Делает ссылку блочным элементом для лучшего управления */
-    text-align: center; /* Центрирует текст внутри ссылки */
-    padding: 5px 10px; /* Добавляет внутренние отступы */
-    box-sizing: border-box; /* Включает padding в ширину */
+    font-size: min(16px, calc(14px + 0.5vw));
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    display: block;
+    text-align: center;
+    padding: 5px 10px;
+    box-sizing: border-box;
 }
 
 .footer-link a:hover {
     text-decoration: underline;
 }
 
-/* Стили для ссылки "WEBSITE DONT WORK? HOW TO FIX" */
 .fix-link {
     position: fixed;
     bottom: 20px;
@@ -385,7 +412,6 @@ button:hover {
         font-size: 16px;
     }
 
-    /* Адаптивные стили для ссылки на мобильных устройствах */
     .fix-link {
         bottom: 10px;
         right: 10px;
@@ -403,14 +429,10 @@ button:hover {
     font-size: 14px;
     text-align: center;
     z-index: 1000;
-    width: 90vw; /* Занимает 90% ширины вьюпорта */
-    max-width: 500px; /* Максимальная ширина */
-    box-sizing: border-box; /* Включает padding в ширину */
-    left: auto; /* Отменяет left: 0 */
-    right: auto; /* Отменяет right: 0 */
-    margin: 0 auto; /* Центрирует блок по горизонтали */
-    padding: 5px 10px; /* Добавляет внутренние отступы */
-    text-align: center;
+    width: 90vw;
+    max-width: 500px;
+    box-sizing: border-box;
+    padding: 5px 10px;
 }
 
 .support-link a {
@@ -419,18 +441,15 @@ button:hover {
     background: rgba(26, 37, 47, 0.8);
     padding: 5px 10px;
     border-radius: 5px;
-        font-size: min(14px, calc(12px + 0.4vw)); /* Шрифт уменьшается до 14px, но не больше */
-    /* font-size: calc(12px + 0.4vw); /* Резервный вариант */
-    /* max-font-size: 14px; /* Резервный вариант */
-    word-wrap: break-word; /* Перенос слов */
-    word-break: break-word; /* Агрессивный перенос */
-    hyphens: auto; /* Дефисы при переносе */
-    display: inline-block; /* Позволяет применять width/max-width к ссылке */
-    max-width: 100%; /* Ссылка не шире родителя */
-    box-sizing: border-box; /* Включает padding в ширину */
-    padding: 3px 6px; /* Внутренние отступы */
-    text-align: center; /* Центрирует текст внутри ссылки */
-    /* background и border-radius остаются */
+    font-size: min(14px, calc(12px + 0.4vw));
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    text-align: center;
 }
 
 .support-link a:hover {
@@ -453,7 +472,6 @@ button:hover {
     display: block;
 }
 
-/* Добавленные стили для скрытия элементов */
 .footer-link.hidden, .support-link.hidden {
     display: none !important;
 }
@@ -465,11 +483,102 @@ button:hover {
     text-decoration: underline;
     pointer-events: auto;
 }
-</style>
+
+/* Modal styles for Saved Pics and Settings */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #2a3b4a;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #d3d7e0;
+}
+
+.saved-pics-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.saved-pic {
+    position: relative;
+}
+
+.saved-pic img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.remove-pic {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ff4d4d;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.nav-buttons {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.nav-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: #2a6b9b;
+    color: #d3d7e0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background-color: #1e4e75;
+    transform: translateY(-2px);
+}
+    </style>
 </head>
 <body>
-    <!-- Добавленная ссылка "WEBSITE DONT WORK? HOW TO FIX" -->
     <a href="https://bestofe6.ru/fix.html" class="fix-link" id="fixLink" target="_blank">WEBSITE DONT WORK? HOW TO FIX</a>
+
+    <div class="nav-buttons">
+        <button class="nav-button" onclick="openSavedPics()">Saved Pics</button>
+        <button class="nav-button" onclick="openSettings()">Settings</button>
+    </div>
 
     <div class="domain-container active" id="domainContainer">
         <div class="container">
@@ -504,7 +613,7 @@ button:hover {
                 <label for="postCountSlider" class="slider-label">Posts per page: <span id="postCountValue">2</span></label>
                 <input type="range" class="slider" id="postCountSlider" min="2" max="6" value="2" oninput="updatePostCount(this.value)">
             </div>
-                       <div class="post-container" id="standardPostContainer"></div>
+            <div class="post-container" id="standardPostContainer"></div>
         </div>
     </div>
 
@@ -531,22 +640,21 @@ button:hover {
         <a href="https://dalink.to/maxkojju" id="supportLinkAnchor">This platform is ad-free, please support our development <span class="hide-button" onclick="hideElement('supportLink', event)">(hide)</span></a>
     </div>
 
-   <style>
-.tinder-container .post-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 50vh;
-}
-.tinder-container img {
-    max-width: ${window.screen.width - 10}px;
-    max-height: ${Math.floor(window.screen.height * 0.6)}px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    display: block;
-}
-</style>
+    <div id="savedPicsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
+            <h2>Saved Pictures</h2>
+            <div class="saved-pics-container" id="savedPicsContainer"></div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
+            <h2>Settings</h2>
+            <button onclick="clearCookies()">Clear All Cookies</button>
+        </div>
+    </div>
 
     <script>
         let domain = 'e621.net';
@@ -556,7 +664,6 @@ button:hover {
         let currentPostTinder = null;
         let currentTagsTinder = '';
 
-        // Функция для скрытия элементов
         function hideElement(elementId, event) {
             if (event) {
                 event.preventDefault();
@@ -568,7 +675,6 @@ button:hover {
             }
         }
 
-        // Функция для скрытия ссылки "WEBSITE DONT WORK? HOW TO FIX"
         function hideFixLink() {
             const fixLink = document.getElementById('fixLink');
             if (fixLink) {
@@ -576,228 +682,332 @@ button:hover {
             }
         }
 
-       function selectDomain(selectedDomain) {
-           domain = selectedDomain;
-           document.getElementById('domainContainer').classList.remove('active');
-           document.getElementById('modeContainer').classList.add('active');
-       }
+        function selectDomain(selectedDomain) {
+            domain = selectedDomain;
+            document.getElementById('domainContainer').classList.remove('active');
+            document.getElementById('modeContainer').classList.add('active');
+        }
 
-       function startStandardMode() {
-           document.getElementById('modeContainer').classList.remove('active');
-           document.getElementById('standardContainer').classList.add('active');
-           hideFixLink(); // Скрываем ссылку при выборе стандартного режима
-       }
+        function startStandardMode() {
+            document.getElementById('modeContainer').classList.remove('active');
+            document.getElementById('standardContainer').classList.add('active');
+            hideFixLink();
+        }
 
-       function startTinderMode() {
-           document.getElementById('modeContainer').classList.remove('active');
-           document.getElementById('tinderContainer').classList.add('active');
-           hideFixLink(); // Скрываем ссылку при выборе tinder режима
-       }
+        function startTinderMode() {
+            document.getElementById('modeContainer').classList.remove('active');
+            document.getElementById('tinderContainer').classList.add('active');
+            hideFixLink();
+        }
+
+        // Cookie handling functions
+        function setCookie(name, value, days = 30) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 10000));
+    document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+        function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        try {
+            return JSON.parse(decodeURIComponent(parts.pop().split(';').shift()));
+        } catch (e) {
+            console.error('Error parsing cookie:', e);
+            return null;
+        }
+    }
+    return null;
+}
+
+        function clearCookies() {
+            document.cookie.split(';').forEach(cookie => {
+                const name = cookie.split('=')[0].trim();
+                document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            });
+            alert('All cookies cleared.');
+            displaySavedPics();
+        }
+
+        function saveImageToCookies(post) {
+    if (!post || !post.file || !post.file.url) return;
+    let savedPics = getCookie('savedPics') || [];
+    
+    // Проверяем, существует ли уже это изображение
+    if (!savedPics.some(pic => pic.id === post.id)) {
+        savedPics.push({
+            id: post.id,
+            url: post.file.url,
+            domain: domain,
+            tags: post.tags || {},
+            score: post.score || {},
+            fav_count: post.fav_count || 0
+        });
+        setCookie('savedPics', savedPics);
+        console.log('Image saved to cookies:', post.id);
+    } else {
+        console.log('Image already saved:', post.id);
+    }
+}
+
+        // Modal handling functions
+        function openSavedPics() {
+            const modal = document.getElementById('savedPicsModal');
+            modal.style.display = 'flex';
+            displaySavedPics();
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function displaySavedPics() {
+    const container = document.getElementById('savedPicsContainer');
+    container.innerHTML = '';
+    const savedPics = getCookie('savedPics') || [];
+    
+    console.log('Saved pics from cookies:', savedPics); // Для отладки
+    
+    if (savedPics.length === 0) {
+        container.innerHTML = '<p>No saved pictures yet.</p>';
+        return;
+    }
+    
+    savedPics.forEach((pic, index) => {
+        const picDiv = document.createElement('div');
+        picDiv.className = 'saved-pic';
+        
+        const img = document.createElement('img');
+        img.src = pic.url;
+        img.alt = 'Saved image';
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.borderRadius = '5px';
+        img.style.cursor = 'pointer';
+        
+        // Обработка ошибок загрузки изображения
+        img.onerror = function() {
+            console.log('Failed to load saved image:', pic.url);
+            img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+        };
+        
+        img.addEventListener('click', () => window.open(`https://${pic.domain}/posts/${pic.id}`, '_blank'));
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-pic';
+        removeBtn.textContent = 'X';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeSavedPic(pic.id);
+        };
+        
+        picDiv.appendChild(img);
+        picDiv.appendChild(removeBtn);
+        container.appendChild(picDiv);
+    });
+}
+
+        function removeSavedPic(id) {
+            let savedPics = getCookie('savedPics') || [];
+            savedPics = savedPics.filter(pic => pic.id !== id);
+            setCookie('savedPics', savedPics);
+            displaySavedPics();
+        }
 
         // Standard Mode Scripts
-       function updatePostCount(value) {
-    postsPerPage = parseInt(value);
-    document.getElementById('postCountValue').textContent = postsPerPage;
-    fetchRandomPosts();
-}
+        function updatePostCount(value) {
+            postsPerPage = parseInt(value);
+            document.getElementById('postCountValue').textContent = postsPerPage;
+            fetchRandomPosts();
+        }
 
-async function fetchRandomPosts(clearTags = false) {
-    if (clearTags) {
-        document.getElementById('standardTagInput').value = '';
-        currentTagsStandard = '';
-    } else {
-        currentTagsStandard = document.getElementById('standardTagInput').value.trim();
-    }
-
-    const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-    const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
-
-    try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': userAgent
+        async function fetchRandomPosts(clearTags = false) {
+            if (clearTags) {
+                document.getElementById('standardTagInput').value = '';
+                currentTagsStandard = '';
+            } else {
+                currentTagsStandard = document.getElementById('standardTagInput').value.trim();
             }
-        });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+
+            const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+            const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'User-Agent': userAgent
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                postsData = data.posts;
+                displayPosts(postsData);
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. try to use VPN or change domain.</p>';
+                document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
+            }
         }
-        const data = await response.json();
-        postsData = data.posts;
-        displayPosts(postsData);
-    } catch (error) {
-        console.error('Error fetching posts:', error);
-        document.getElementById('standardPostContainer').innerHTML = '<p>Error loading posts. try to use VPN or change domain.</p>';
-        document.getElementById('standardErrorWarning').textContent = 'Error loading posts. Please try again.';
-    }
-}
 
-function displayPosts(posts) {
-    const container = document.getElementById('standardPostContainer');
-    container.innerHTML = '';
-    document.getElementById('standardErrorWarning').textContent = '';
+        function displayPosts(posts) {
+            const container = document.getElementById('standardPostContainer');
+            container.innerHTML = '';
+            document.getElementById('standardErrorWarning').textContent = '';
 
-    posts.forEach((post, index) => {
-        if (post.file && post.file.url) {
-            const postDiv = document.createElement('div');
-            postDiv.className = 'post';
-            postDiv.dataset.index = index;
-            const img = document.createElement('img');
-            
-            // Добавляем обработчик ошибок и таймаут загрузки
-            setupImageWithTimeout(img, post.file.url, index, 'standard');
-            
-            const viewsDiv = document.createElement('div');
-            viewsDiv.className = 'views';
-            const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
-            viewsDiv.textContent = `cool ratio: ${ratio}`;
-            const viewButton = document.createElement('div');
-            viewButton.textContent = 'View on site';
-            viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
-            postDiv.appendChild(img);
-            postDiv.appendChild(viewsDiv);
-            postDiv.appendChild(viewButton);
-            img.addEventListener('click', () => handleImageClick(index));
-            container.appendChild(postDiv);
-        }
-    });
-}
-
-// Функция для настройки изображения с таймаутом
-function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
-    const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
-    let imageLoaded = false;
-    
-    // Таймаут 5 секунд
-    const timeoutId = setTimeout(() => {
-        if (!imageLoaded) {
-            console.log(`Image loading timeout for ${imageUrl}`);
-            imgElement.src = placeholderUrl;
-            imgElement.alt = 'Image failed to load';
-        }
-    }, 10000);
-    
-    // Обработчик успешной загрузки
-    imgElement.onload = function() {
-        imageLoaded = true;
-        clearTimeout(timeoutId);
-    };
-    
-    // Обработчик ошибки загрузки
-    imgElement.onerror = function() {
-        imageLoaded = true;
-        clearTimeout(timeoutId);
-        imgElement.src = placeholderUrl;
-        imgElement.alt = 'Image not available';
-    };
-    
-    // Начинаем загрузку
-    imgElement.src = imageUrl;
-    imgElement.alt = 'Post image';
-}
-
-async function handleImageClick(index) {
-    document.querySelectorAll('.views').forEach(div => {
-        div.style.display = 'block';
-    });
-
-    setTimeout(async () => {
-        const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-        const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-        const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
-
-        try {
-            const response = await fetch(apiUrl, {
-                headers: {
-                    'User-Agent': userAgent
+            posts.forEach((post, index) => {
+                if (post.file && post.file.url) {
+                    const postDiv = document.createElement('div');
+                    postDiv.className = 'post';
+                    postDiv.dataset.index = index;
+                    const img = document.createElement('img');
+                    setupImageWithTimeout(img, post.file.url, index, 'standard');
+                    const viewsDiv = document.createElement('div');
+                    viewsDiv.className = 'views';
+                    const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
+                    viewsDiv.textContent = `cool ratio: ${ratio}`;
+                    const viewButton = document.createElement('div');
+                    viewButton.textContent = 'View on site';
+                    viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
+                    postDiv.appendChild(img);
+                    postDiv.appendChild(viewsDiv);
+                    postDiv.appendChild(viewButton);
+                    img.addEventListener('click', () => handleImageClick(index));
+                    container.appendChild(postDiv);
                 }
             });
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const data = await response.json();
-            const newPosts = data.posts;
-
-            const selectedPost = postsData[index];
-
-            let newPostsIndex = 0;
-            postsData = postsData.map((post, i) => {
-                if (i === index) {
-                    return selectedPost;
-                }
-                return newPosts[newPostsIndex++] || post;
-            });
-
-            displayPosts(postsData);
-        } catch (error) {
-            console.error('Error fetching new posts:', error);
-            document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
-    }, 1000);
-}
+
+        function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
+            const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+            let imageLoaded = false;
+            const timeoutId = setTimeout(() => {
+                if (!imageLoaded) {
+                    console.log(`Image loading timeout for ${imageUrl}`);
+                    imgElement.src = placeholderUrl;
+                    imgElement.alt = 'Image failed to load';
+                }
+            }, 10000);
+            imgElement.onload = function() {
+                imageLoaded = true;
+                clearTimeout(timeoutId);
+            };
+            imgElement.onerror = function() {
+                imageLoaded = true;
+                clearTimeout(timeoutId);
+                imgElement.src = placeholderUrl;
+                imgElement.alt = 'Image not available';
+            };
+            imgElement.src = imageUrl;
+            imgElement.alt = 'Post image';
+        }
+
+        async function handleImageClick(index) {
+            document.querySelectorAll('.views').forEach(div => {
+                div.style.display = 'block';
+            });
+         console.log('Image clicked, saving to cookies...', postsData[index].id);
+            saveImageToCookies(postsData[index]);
+
+            setTimeout(async () => {
+                const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+                const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
+                const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'User-Agent': userAgent
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    const newPosts = data.posts;
+                    const selectedPost = postsData[index];
+                    let newPostsIndex = 0;
+                    postsData = postsData.map((post, i) => {
+                        if (i === index) {
+                            return selectedPost;
+                        }
+                        return newPosts[newPostsIndex++] || post;
+                    });
+                    displayPosts(postsData);
+                } catch (error) {
+                    console.error('Error fetching new posts:', error);
+                    document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
+                }
+            }, 1000);
+        }
 
         // Tinder Mode Scripts
         async function fetchRandomImage() {
-    currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
-    const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-    const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
-    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+            currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
+            const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
+            const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
+            const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
 
-    try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': userAgent
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'User-Agent': userAgent
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                if (data.posts && data.posts.length > 0) {
+                    currentPostTinder = data.posts[0];
+                    displayImage(currentPostTinder);
+                } else {
+                    throw new Error('No posts returned');
+                }
+            } catch (error) {
+                console.error('Error fetching image:', error);
+                document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
+                document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
             }
-        });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
         }
-        const data = await response.json();
-        if (data.posts && data.posts.length > 0) {
-            currentPostTinder = data.posts[0];
-            displayImage(currentPostTinder);
-        } else {
-            throw new Error('No posts returned');
+
+        function displayImage(post) {
+            const container = document.getElementById('tinderPostContainer');
+            container.innerHTML = '';
+            document.getElementById('tinderErrorWarning').textContent = '';
+
+            if (post.file && post.file.url) {
+                const img = document.createElement('img');
+                img.style.maxWidth = `${window.screen.width - 10}px`;
+                img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.margin = '0 auto';
+                setupImageWithTimeout(img, post.file.url, 0, 'tinder');
+                container.appendChild(img);
+            } else {
+                container.innerHTML = '<p>No valid image found.</p>';
+            }
         }
-    } catch (error) {
-        console.error('Error fetching image:', error);
-        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
-        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
-    }
-}
 
-function displayImage(post) {
-    const container = document.getElementById('tinderPostContainer');
-    container.innerHTML = '';
-    document.getElementById('tinderErrorWarning').textContent = '';
+        async function saveImage() {
+            if (currentPostTinder) {
+             console.log('Saving image to cookies...', currentPostTinder.id);
+                saveImageToCookies(currentPostTinder);
+                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+                await fetchRandomImage();
+            }
+        }
 
-    if (post.file && post.file.url) {
-        const img = document.createElement('img');
-        img.style.maxWidth = `${window.screen.width - 10}px`;
-        img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
-        img.style.height = 'auto';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-        
-        // Используем ту же функцию настройки изображения с таймаутом
-        setupImageWithTimeout(img, post.file.url, 0, 'tinder');
-        
-        container.appendChild(img);
-    } else {
-        container.innerHTML = '<p>No valid image found.</p>';
-    }
-}
-
-async function saveImage() {
-    if (currentPostTinder) {
-        window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
-        await fetchRandomImage();
-    }
-}
-
-async function skipImage() {
-    await fetchRandomImage();
-}
+        async function skipImage() {
+            await fetchRandomImage();
+        }
     </script>
 </body>
 </html>
