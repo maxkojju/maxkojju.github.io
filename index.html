@@ -98,7 +98,20 @@ body {
     background-position: center;
     background-repeat: no-repeat;
 }
+.button-container {
+    margin: 20px 0;
+    transition: opacity 0.3s ease;
+}
 
+#tinderButtons {
+    display: none;
+}
+#tinderButtons:not([style*="display: none"]) {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
 .domain-container .container, .mode-container .container {
     flex: 1;
     display: flex;
@@ -163,7 +176,26 @@ body {
     color: #d3d7e0;
     box-sizing: border-box;
 }
+.setting-item {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #2a3b4a;
+    border-radius: 5px;
+}
 
+.setting-item label {
+    color: #d3d7e0;
+    font-size: 14px;
+}
+
+#proxyInput {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #3b4a5a;
+    border-radius: 3px;
+    background-color: #1a252f;
+    color: #d3d7e0;
+}
 .domain-input:focus, .tag-input:focus {
     outline: none;
     border-color: #2a6b9b;
@@ -549,7 +581,14 @@ button:hover {
     gap: 10px;
     padding: 10px;
 }
-
+#delayInput {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #3b4a5a;
+    border-radius: 3px;
+    background-color: #1a252f;
+    color: #d3d7e0;
+}
 .saved-pic {
     position: relative;
 }
@@ -648,21 +687,21 @@ button:hover {
         </div>
     </div>
 
-    <div class="tinder-container" id="tinderContainer">
-        <div class="container">
-            <h1></h1>
-            <p class="warning" id="tinderErrorWarning"></p>
-            <div class="input-container">
-                <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
-                <button onclick="fetchRandomImage()">Search</button>
-            </div>
-            <div class="post-container" id="tinderPostContainer"></div>
-            <div class="button-container">
-                <button onclick="saveImage()">Save</button>
-                <button onclick="skipImage()">Skip</button>
-            </div>
+   <div class="tinder-container" id="tinderContainer">
+    <div class="container">
+        <h1></h1>
+        <p class="warning" id="tinderErrorWarning"></p>
+        <div class="input-container">
+            <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
+            <button onclick="fetchRandomImage()">Search</button>
+        </div>
+        <div class="post-container" id="tinderPostContainer"></div>
+        <div class="button-container" id="tinderButtons" style="display: none;">
+            <button onclick="saveImage()">Save</button>
+            <button onclick="skipImage()">Skip</button>
         </div>
     </div>
+</div>
 
     <div class="footer-link" id="footerLink">
         
@@ -679,27 +718,110 @@ button:hover {
         </div>
     </div>
 
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
-            <h2>Settings</h2>
-            <button onclick="clearCookies()">Clear All Cookies</button>
+   <div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" id="filterNsfwToggle"> Filter NSFW content
+            </label>
         </div>
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" id="autoOpenSavedToggle"> Auto open saved post (Tinder Mode)
+            </label>
+        </div>
+        <div class="setting-item">
+            <label for="delayInput">Delay before next image (ms):</label>
+            <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
+        </div>
+        <div class="setting-item">
+            <label for="proxyInput">Proxy URL template:</label>
+            <input type="text" id="proxyInput" placeholder="https://your-proxy.com/?url=[URL]" style="width: 100%; margin-top: 5px;">
+        </div>
+        <button onclick="saveSettings()">Save Settings</button>
+        <button onclick="clearCookies()">Clear All Cookies</button>
     </div>
+</div>
+</div>
+</div>
 
    <script>
+let autoOpenSaved = true;
 let domain = 'e621.net';
 let postsData = [];
 let currentTagsStandard = '';
 let postsPerPage = 2;
 let currentPostTinder = null;
 let currentTagsTinder = '';
+let filterNsfw = true;
+let proxyTemplate = '';
+let delayBeforeNextImage = 3000;
 
+
+function loadSettings() {
+    filterNsfw = getLocalStorage('filterNsfw') !== false; // по умолчанию true
+    proxyTemplate = getLocalStorage('proxyTemplate') || '';
+    delayBeforeNextImage = getLocalStorage('delayBeforeNextImage') || 3000;
+    autoOpenSaved = getLocalStorage('autoOpenSaved') !== false; // по умолчанию true
+    
+    // Обновляем UI
+    document.getElementById('filterNsfwToggle').checked = filterNsfw;
+    document.getElementById('autoOpenSavedToggle').checked = autoOpenSaved;
+    document.getElementById('proxyInput').value = proxyTemplate;
+    document.getElementById('delayInput').value = delayBeforeNextImage;
+}
+
+function saveSettings() {
+    filterNsfw = document.getElementById('filterNsfwToggle').checked;
+    autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
+    proxyTemplate = document.getElementById('proxyInput').value.trim();
+    delayBeforeNextImage = parseInt(document.getElementById('delayInput').value) || 3000;
+    
+    // Валидация значения задержки
+    if (delayBeforeNextImage < 1000) delayBeforeNextImage = 1000;
+    if (delayBeforeNextImage > 30000) delayBeforeNextImage = 30000;
+    
+    setLocalStorage('filterNsfw', filterNsfw);
+    setLocalStorage('autoOpenSaved', autoOpenSaved);
+    setLocalStorage('proxyTemplate', proxyTemplate);
+    setLocalStorage('delayBeforeNextImage', delayBeforeNextImage);
+    
+    alert('Settings saved!');
+    closeModal('settingsModal');
+}
 // Utility to check if running locally
 function isLocalEnvironment() {
     return window.location.protocol === 'file:';
 }
-
+function buildApiUrl(baseUrl, tags) {
+    let tagsQuery = tags;
+    
+    // Добавляем rating:s если включен фильтр
+    if (filterNsfw) {
+        if (tagsQuery) {
+            tagsQuery += ' rating:s';
+        } else {
+            tagsQuery = 'rating:s';
+        }
+    }
+    
+    if (tagsQuery) {
+        tagsQuery += ' order:random';
+    } else {
+        tagsQuery = 'order:random';
+    }
+    
+    let apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
+    
+    // Применяем proxy если указан
+    if (proxyTemplate) {
+        apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
+    }
+    
+    return apiUrl;
+}
 // LocalStorage handling functions
 function setLocalStorage(name, value) {
     try {
@@ -768,6 +890,7 @@ function openSavedPics() {
 }
 
 function openSettings() {
+    loadSettings(); // Загружаем текущие настройки при открытии
     document.getElementById('settingsModal').style.display = 'flex';
 }
 
@@ -833,8 +956,6 @@ function updatePostCount(value) {
 }
 
 async function fetchRandomPosts(clearTags = false) {
-    
-
     if (clearTags) {
         document.getElementById('standardTagInput').value = '';
         currentTagsStandard = '';
@@ -843,8 +964,7 @@ async function fetchRandomPosts(clearTags = false) {
     }
 
     const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-    const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
+    const apiUrl = buildApiUrl(domain, currentTagsStandard);
 
     try {
         const response = await fetch(apiUrl, {
@@ -933,11 +1053,8 @@ async function handleImageClick(index) {
     }
 
     setTimeout(async () => {
-        
-
         const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-        const tagsQuery = currentTagsStandard ? `${currentTagsStandard} order:random` : 'order:random';
-        const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage - 1}`;
+        const apiUrl = buildApiUrl(domain, currentTagsStandard);
 
         try {
             const response = await fetch(apiUrl, {
@@ -963,17 +1080,18 @@ async function handleImageClick(index) {
             console.error('Error fetching new posts:', error);
             document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
-    }, 10000);
+    }, delayBeforeNextImage); // Используем настраиваемую задержку
 }
+
 
 // Tinder Mode Scripts
 async function fetchRandomImage() {
-
-
     currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
     const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-    const tagsQuery = currentTagsTinder ? `${currentTagsTinder} order:random` : 'order:random';
-    const apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=1`;
+    const apiUrl = buildApiUrl(domain, currentTagsTinder);
+
+    // Скрываем кнопки до загрузки новой картинки
+    document.getElementById('tinderButtons').style.display = 'none';
 
     try {
         const response = await fetch(apiUrl, {
@@ -988,6 +1106,8 @@ async function fetchRandomImage() {
         if (data.posts && data.posts.length > 0) {
             currentPostTinder = data.posts[0];
             displayImage(currentPostTinder);
+            // Показываем кнопки после успешной загрузки картинки
+            document.getElementById('tinderButtons').style.display = 'block';
         } else {
             throw new Error('No posts returned');
         }
@@ -995,6 +1115,7 @@ async function fetchRandomImage() {
         console.error('Error fetching image:', error);
         document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
         document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
+      
     }
 }
 
@@ -1014,6 +1135,7 @@ function displayImage(post) {
         container.appendChild(img);
     } else {
         container.innerHTML = '<p>No valid image found.</p>';
+        // Скрываем кнопки если нет валидной картинки
     }
 }
 
@@ -1021,7 +1143,10 @@ async function saveImage() {
     if (currentPostTinder) {
         if (saveImageToStorage(currentPostTinder)) {
             console.log('Image saved successfully:', currentPostTinder.id);
-            window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+            // Открываем ссылку только если включена опция autoOpenSaved
+            if (autoOpenSaved) {
+                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+            }
         } else {
             console.log('Image not saved (already exists or invalid):', currentPostTinder.id);
         }
@@ -1079,6 +1204,9 @@ function startTinderMode() {
     document.querySelector('.nav-buttons').classList.remove('hidden');
     document.getElementById('footerLink').style.display = 'block';
 }
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+});
 </script>
 </body>
 </html>
