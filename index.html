@@ -70,7 +70,23 @@ body {
     display: flex;
     flex-direction: column;
 }
+/* Стили для модального окна выбора типа импорта */
+#importTypeModal .modal-content {
+    max-width: 400px;
+}
 
+#importTypeModal p {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #d3d7e0;
+}
+
+@media (max-width: 768px) {
+    #importTypeModal .modal-content {
+        width: 90%;
+        margin: 10% auto;
+    }
+}
 .domain-container, .mode-container, .standard-container, .tinder-container {
     width: 100%;
     min-height: 100vh;
@@ -102,7 +118,25 @@ body {
     margin: 20px 0;
     transition: opacity 0.3s ease;
 }
+.saved-pics-actions {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 
+@media (max-width: 768px) {
+    .saved-pics-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .saved-pics-actions .nav-button {
+        width: 200px;
+        margin: 5px 0;
+    }
+}
 #tinderButtons {
     display: none;
 }
@@ -735,14 +769,32 @@ button:hover {
         <a href="https://dalink.to/maxkojju" id="supportLinkAnchor">This platform is ad-free, please support our development <span class="hide-button" onclick="hideElement('supportLink', event)">(hide)</span></a>
     </div>
 
-    <div id="savedPicsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
-            <h2>Saved Pictures</h2>
-            <div class="saved-pics-container" id="savedPicsContainer"></div>
+<div id="savedPicsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
+        <h2>Saved Pictures</h2>
+        <!-- Добавленные кнопки -->
+        <div class="saved-pics-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="nav-button" onclick="exportSaves()">Export Saves</button>
+            <button class="nav-button" onclick="importSaves()">Import Saves</button>
+            <button class="nav-button" onclick="downloadAllSaves()">Download All</button>
+        </div>
+        <div class="saved-pics-container" id="savedPicsContainer"></div>
+    </div>
+</div>
+
+<!-- Добавьте модальное окно для выбора типа импорта -->
+<div id="importTypeModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('importTypeModal')">&times;</span>
+        <h2>Import Type</h2>
+        <p>How would you like to import the saved pictures?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button class="nav-button" onclick="confirmImport('add')">Add to Current</button>
+            <button class="nav-button" onclick="confirmImport('overwrite')">Overwrite All</button>
         </div>
     </div>
-
+</div>
   <div id="settingsModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
@@ -789,6 +841,7 @@ let filterNsfw = true;
 let proxyTemplate = '';
 let delayBeforeNextImage = 3000;
 let blacklistTags = '-shota -scat -gore';
+let importDataCache = null;
 
 function loadSettings() {
     filterNsfw = getLocalStorage('filterNsfw') !== false; // по умолчанию true
@@ -825,6 +878,164 @@ function saveSettings() {
     
     alert('Settings saved!');
     closeModal('settingsModal');
+}
+
+// Функция экспорта сохранений
+function exportSaves() {
+    const savedPics = getLocalStorage('savedPics') || [];
+    if (savedPics.length === 0) {
+        alert('No saved pictures to export.');
+        return;
+    }
+    
+    const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        count: savedPics.length,
+        savedPics: savedPics
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = 'exports.bestofe';
+    link.click();
+    
+    URL.revokeObjectURL(link.href);
+    console.log('Exported', savedPics.length, 'saved pictures');
+}
+
+// Функция импорта сохранений
+function importSaves() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.bestofe,application/json';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                importDataCache = JSON.parse(e.target.result);
+                const importedPics = importDataCache.savedPics || [];
+                
+                if (importedPics.length === 0) {
+                    alert('No valid saved pictures found in the file.');
+                    return;
+                }
+                
+                // Показываем окно выбора типа импорта
+                document.getElementById('importTypeModal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error parsing import file:', error);
+                alert('Error reading import file. Please make sure it is a valid .bestofe file.');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+function confirmImport(importType) {
+    if (!importDataCache) {
+        alert('No import data available.');
+        return;
+    }
+    
+    const importedPics = importDataCache.savedPics || [];
+    let currentSavedPics = getLocalStorage('savedPics') || [];
+    let importedCount = 0;
+    
+    if (importType === 'overwrite') {
+        // Заменяем все текущие сохранения
+        currentSavedPics = importedPics;
+        importedCount = importedPics.length;
+    } else {
+        // Добавляем к текущим (игнорируя дубликаты)
+        importedPics.forEach(pic => {
+            if (!currentSavedPics.some(existingPic => existingPic.id === pic.id)) {
+                currentSavedPics.push(pic);
+                importedCount++;
+            }
+        });
+    }
+    
+    setLocalStorage('savedPics', currentSavedPics);
+    displaySavedPics();
+    
+    closeModal('importTypeModal');
+    importDataCache = null;
+    
+    alert(`Successfully imported ${importedCount} pictures${importType === 'add' ? ` (${importedPics.length - importedCount} were duplicates)` : ''}`);
+}
+// Функция скачивания всех сохраненных изображений
+function downloadAllSaves() {
+    const savedPics = getLocalStorage('savedPics') || [];
+    if (savedPics.length === 0) {
+        alert('No saved pictures to download.');
+        return;
+    }
+    
+    const confirmed = confirm(`This will open ${savedPics.length} images in this tab, one by one. Continue?`);
+    if (!confirmed) return;
+    
+    let currentIndex = 0;
+    
+    function openNextImage() {
+        if (currentIndex >= savedPics.length) {
+            alert('All images have been opened.');
+            return;
+        }
+        
+        const pic = savedPics[currentIndex];
+        window.open(pic.url, '_blank');
+        currentIndex++;
+        
+        // Предлагаем открыть следующее изображение
+        if (currentIndex < savedPics.length) {
+            const openNext = confirm(`Opened image ${currentIndex}/${savedPics.length}. Open next image?`);
+            if (openNext) {
+                openNextImage();
+            }
+        } else {
+            alert('All images have been opened.');
+        }
+    }
+    
+    openNextImage();
+}
+
+// Вспомогательная функция для скачивания одного изображения
+function downloadSingleImage(pic, index) {
+    return new Promise((resolve, reject) => {
+        const link = document.createElement('a');
+        link.href = pic.url;
+        
+        // Получаем расширение файла из URL
+        const urlParts = pic.url.split('.');
+        const extension = urlParts[urlParts.length - 1].split('?')[0];
+        
+        // Создаем имя файла: ID_поста.расширение
+        link.download = `bestofe_${pic.id}.${extension}`;
+        
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        // Используем setTimeout для обработки скачивания
+        setTimeout(() => {
+            link.click();
+            document.body.removeChild(link);
+            
+            // Даем время для начала скачивания перед разрешением промиса
+            setTimeout(resolve, 100);
+        }, 100);
+    });
 }
 
 // Utility to check if running locally
