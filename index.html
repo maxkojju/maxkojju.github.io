@@ -592,7 +592,32 @@ button:hover {
 .saved-pic {
     position: relative;
 }
+/* Добавляем стили для поля ввода блэклиста */
+#blacklistInput {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #3b4a5a;
+    border-radius: 3px;
+    background-color: #1a252f;
+    color: #d3d7e0;
+    width: 100%;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
 
+#blacklistInput:focus {
+    outline: none;
+    border-color: #2a6b9b;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    #blacklistInput {
+        width: 100%;
+        max-width: calc(100% - 6px);
+        font-size: 14px;
+    }
+}
 .saved-pic img {
     width: 100%;
     height: auto;
@@ -718,7 +743,7 @@ button:hover {
         </div>
     </div>
 
-   <div id="settingsModal" class="modal">
+  <div id="settingsModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
         <h2>Settings</h2>
@@ -735,6 +760,11 @@ button:hover {
         <div class="setting-item">
             <label for="delayInput">Delay before next image (ms):</label>
             <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
+        </div>
+        <!-- Добавленный блок для блэклиста -->
+        <div class="setting-item">
+            <label for="blacklistInput">Blacklist tags:</label>
+            <input type="text" id="blacklistInput" placeholder="e.g. -gore -nintendo" style="width: 100%; margin-top: 5px;">
         </div>
         <div class="setting-item">
             <label for="proxyInput">Proxy URL template:</label>
@@ -758,26 +788,30 @@ let currentTagsTinder = '';
 let filterNsfw = true;
 let proxyTemplate = '';
 let delayBeforeNextImage = 3000;
-
+let blacklistTags = '-shota -scat -gore';
 
 function loadSettings() {
     filterNsfw = getLocalStorage('filterNsfw') !== false; // по умолчанию true
     proxyTemplate = getLocalStorage('proxyTemplate') || '';
     delayBeforeNextImage = getLocalStorage('delayBeforeNextImage') || 3000;
     autoOpenSaved = getLocalStorage('autoOpenSaved') !== false; // по умолчанию true
+    blacklistTags = getLocalStorage('blacklistTags') || '-shota -scat -gore'; // загружаем блэклист
     
     // Обновляем UI
     document.getElementById('filterNsfwToggle').checked = filterNsfw;
     document.getElementById('autoOpenSavedToggle').checked = autoOpenSaved;
     document.getElementById('proxyInput').value = proxyTemplate;
     document.getElementById('delayInput').value = delayBeforeNextImage;
+    document.getElementById('blacklistInput').value = blacklistTags; // устанавливаем значение блэклиста
 }
+
 
 function saveSettings() {
     filterNsfw = document.getElementById('filterNsfwToggle').checked;
     autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
     proxyTemplate = document.getElementById('proxyInput').value.trim();
     delayBeforeNextImage = parseInt(document.getElementById('delayInput').value) || 3000;
+    blacklistTags = document.getElementById('blacklistInput').value.trim() || '-shota -scat -gore'; // сохраняем блэклист
     
     // Валидация значения задержки
     if (delayBeforeNextImage < 1000) delayBeforeNextImage = 1000;
@@ -787,10 +821,12 @@ function saveSettings() {
     setLocalStorage('autoOpenSaved', autoOpenSaved);
     setLocalStorage('proxyTemplate', proxyTemplate);
     setLocalStorage('delayBeforeNextImage', delayBeforeNextImage);
+    setLocalStorage('blacklistTags', blacklistTags); // сохраняем блэклист
     
     alert('Settings saved!');
     closeModal('settingsModal');
 }
+
 // Utility to check if running locally
 function isLocalEnvironment() {
     return window.location.protocol === 'file:';
@@ -804,6 +840,15 @@ function buildApiUrl(baseUrl, tags) {
             tagsQuery += ' rating:s';
         } else {
             tagsQuery = 'rating:s';
+        }
+    }
+    
+    // Добавляем блэклист теги
+    if (blacklistTags) {
+        if (tagsQuery) {
+            tagsQuery += ' ' + blacklistTags;
+        } else {
+            tagsQuery = blacklistTags;
         }
     }
     
@@ -1085,6 +1130,7 @@ async function handleImageClick(index) {
 
 
 // Tinder Mode Scripts
+// Tinder Mode Scripts
 async function fetchRandomImage() {
     currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
     const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
@@ -1113,9 +1159,14 @@ async function fetchRandomImage() {
         }
     } catch (error) {
         console.error('Error fetching image:', error);
-        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Try again or use a VPN.</p>';
-        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Please try again.';
-      
+        document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Trying again in 1 second...</p>';
+        document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Auto-retrying...';
+        
+        // Автоматический повтор через 1 секунду при ошибке
+        setTimeout(() => {
+            console.log('Auto-retrying after error...');
+            fetchRandomImage();
+        }, 500);
     }
 }
 
@@ -1150,7 +1201,12 @@ async function saveImage() {
         } else {
             console.log('Image not saved (already exists or invalid):', currentPostTinder.id);
         }
-        await fetchRandomImage();
+        try {
+            await fetchRandomImage();
+        } catch (error) {
+            console.error('Error in saveImage:', error);
+            // Автоматический повтор уже обрабатывается в fetchRandomImage
+        }
     } else {
         console.error('No current post to save in Tinder mode');
         document.getElementById('tinderErrorWarning').textContent = 'No image to save. Please try again.';
@@ -1158,7 +1214,12 @@ async function saveImage() {
 }
 
 async function skipImage() {
-    await fetchRandomImage();
+    try {
+        await fetchRandomImage();
+    } catch (error) {
+        console.error('Error in skipImage:', error);
+        // В случае ошибки автоматический повтор уже обрабатывается в fetchRandomImage
+    }
 }
 
 function hideElement(elementId, event) {
