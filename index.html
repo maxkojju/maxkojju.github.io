@@ -37,14 +37,15 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
+</script>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Best of e926/e621 Picker</title>
-    <meta name="description" content="Best of e6 - Discover amazing furry artworks from e621 and e926. Browse SFW and NSWF content without ads. Random post picker with standard and tinder modes.">
-    <meta name="keywords" content="e621, e926, furry, artwork, random posts, image picker">
+    <meta name="description" content="Best of e6 & nekos.moe - Discover amazing furry artworks from e621, e926, and nekos.moe. Browse SFW and NSWF content without ads. Random post picker with standard and tinder modes.">
+    <meta name="keywords" content="e621, e926, nekos.moe, furry, artwork, random posts, image picker">
     <meta name="robots" content="index, follow">
     <link rel="icon" type="image/x-icon" href="https://bestofe6.ru//favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="https://bestofe6.ru//favicon-32x32.png">
@@ -209,7 +210,7 @@ body {
     right: 10px;
     display: flex;
     gap: 10px;
-    z-index: 1000; /* Добавьте z-index */
+    z-index: 1000;
 }
 
 /* Обновите стиль footer-link */
@@ -221,7 +222,7 @@ body {
     margin: 0 auto;
     font-size: 16px;
     text-align: center;
-    display: none; /* По умолчанию скрыто */
+    display: none;
     width: 90vw;
     max-width: 300px;
     box-sizing: border-box;
@@ -241,6 +242,9 @@ body {
     color: #d3d7e0;
     box-sizing: border-box;
 }
+.tag-input.hidden, .input-container.hidden {
+    display: none;
+}
 .setting-item {
     margin: 15px 0;
     padding: 10px;
@@ -251,6 +255,11 @@ body {
 .setting-item label {
     color: #d3d7e0;
     font-size: 14px;
+}
+
+.setting-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 #proxyInput {
@@ -380,7 +389,13 @@ button:hover {
 .domain-button.unsafe:hover {
     background-color: #751e1e;
 }
+.domain-button.moe {
+    background-color: #d60bbe;
+}
 
+.domain-button.moe:hover {
+    background-color: #910080;
+}
 .mode-buttons {
     display: flex;
     gap: 15px;
@@ -474,7 +489,7 @@ button:hover {
 
 @media (max-width: 768px) {
     .footer-link {
-        display: none; /* Измените с block на none */
+        display: none;
     }
 
     .post-container {
@@ -747,6 +762,7 @@ button:hover {
             <div class="domain-buttons">
                 <button class="domain-button" onclick="selectDomain('e926.net')">e926.net</button>
                 <button class="domain-button unsafe" onclick="selectDomain('e621.net')">e621.net (unsafe)</button>
+                <button class="domain-button moe" onclick="selectDomain('nekos.moe')">nekos.moe</button>
             </div>
         </div>
     </div>
@@ -777,90 +793,84 @@ button:hover {
         </div>
     </div>
 
-   <div class="tinder-container" id="tinderContainer">
-    <div class="container">
-        <h1></h1>
-        <p class="warning" id="tinderErrorWarning"></p>
-        <div class="input-container">
-            <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
-            <button onclick="fetchRandomImage()">Search</button>
-        </div>
-        <div class="post-container" id="tinderPostContainer"></div>
-        <div class="button-container" id="tinderButtons" style="display: none;">
-            <button onclick="saveImage()">Save</button>
-            <button onclick="skipImage()">Skip</button>
+    <div class="tinder-container" id="tinderContainer">
+        <div class="container">
+            <h1></h1>
+            <p class="warning" id="tinderErrorWarning"></p>
+            <div class="input-container">
+                <input type="text" class="tag-input" id="tinderTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
+                <button onclick="fetchRandomImage()">Search</button>
+            </div>
+            <div class="post-container" id="tinderPostContainer"></div>
+            <div class="button-container" id="tinderButtons" style="display: none;">
+                <button onclick="saveImage()">Save</button>
+                <button onclick="skipImage()">Skip</button>
+            </div>
         </div>
     </div>
-</div>
 
-    <div class="footer-link" id="footerLink">
-        
-    </div>
+    <div class="footer-link" id="footerLink"></div>
     <div class="support-link" id="supportLink">
         <a href="https://dalink.to/maxkojju" id="supportLinkAnchor">This platform is ad-free, please support our development <span class="hide-button" onclick="hideElement('supportLink', event)">(hide)</span></a>
     </div>
 
-<div id="savedPicsModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
-        <h2>Saved Pictures</h2>
-        <!-- Добавленные кнопки -->
-        <div class="saved-pics-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button class="nav-button" onclick="exportSaves()">Export Saves</button>
-            <button class="nav-button" onclick="importSaves()">Import Saves</button>
-            <button class="nav-button" onclick="downloadAllSaves()">Download All</button>
+    <div id="savedPicsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
+            <h2>Saved Pictures</h2>
+            <div class="saved-pics-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="nav-button" onclick="exportSaves()">Export Saves</button>
+                <button class="nav-button" onclick="importSaves()">Import Saves</button>
+                <button class="nav-button" onclick="downloadAllSaves()">Download All</button>
+            </div>
+            <div class="saved-pics-container" id="savedPicsContainer"></div>
         </div>
-        <div class="saved-pics-container" id="savedPicsContainer"></div>
     </div>
-</div>
 
-<!-- Добавьте модальное окно для выбора типа импорта -->
-<div id="importTypeModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button" onclick="closeModal('importTypeModal')">&times;</span>
-        <h2>Import Type</h2>
-        <p>How would you like to import the saved pictures?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-            <button class="nav-button" onclick="confirmImport('add')">Add to Current</button>
-            <button class="nav-button" onclick="confirmImport('overwrite')">Overwrite All</button>
+    <div id="importTypeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('importTypeModal')">&times;</span>
+            <h2>Import Type</h2>
+            <p>How would you like to import the saved pictures?</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="nav-button" onclick="confirmImport('add')">Add to Current</button>
+                <button class="nav-button" onclick="confirmImport('overwrite')">Overwrite All</button>
+            </div>
         </div>
     </div>
-</div>
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
-        <h2>Settings</h2>
-        <div class="setting-item">
-            <label>
-                <input type="checkbox" id="filterNsfwToggle"> Filter NSFW content
-            </label>
-        </div>
-        <div class="setting-item">
-            <label>
-                <input type="checkbox" id="autoOpenSavedToggle"> Auto open saved post (Tinder Mode)
-            </label>
-        </div>
-        <div class="setting-item">
-            <label for="delayInput">Delay before next image (ms):</label>
-            <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
-        </div>
-        <!-- Добавленный блок для блэклиста -->
-        <div class="setting-item">
-            <label for="blacklistInput">Blacklist tags:</label>
-            <input type="text" id="blacklistInput" placeholder="e.g. -gore -nintendo" style="width: 100%; margin-top: 5px;">
-        </div>
-        <div class="setting-item">
-            <label for="proxyInput">Proxy URL template:</label>
-            <input type="text" id="proxyInput" placeholder="https://your-proxy.com/?url=[URL]" style="width: 100%; margin-top: 5px;">
-        </div>
-        <button onclick="saveSettings()">Save Settings</button>
-        <button onclick="clearCookies()">Clear All Cookies</button>
-    </div>
-</div>
-</div>
-</div>
 
-   <script>
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('settingsModal')">&times;</span>
+            <h2>Settings</h2>
+            <div class="setting-item" id="filterNsfwSetting">
+                <label>
+                    <input type="checkbox" id="filterNsfwToggle"> Filter NSFW content
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="autoOpenSavedToggle"> Auto open saved post (Tinder Mode)
+                </label>
+            </div>
+            <div class="setting-item">
+                <label for="delayInput">Delay before next image (ms):</label>
+                <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
+            </div>
+            <div class="setting-item" id="blacklistSetting">
+                <label for="blacklistInput">Blacklist tags:</label>
+                <input type="text" id="blacklistInput" placeholder="e.g. -gore -nintendo" style="width: 100%; margin-top: 5px;">
+            </div>
+            <div class="setting-item">
+                <label for="proxyInput">Proxy URL template:</label>
+                <input type="text" id="proxyInput" placeholder="https://your-proxy.com/?url=[URL]" style="width: 100%; margin-top: 5px;">
+            </div>
+            <button onclick="saveSettings()">Save Settings</button>
+            <button onclick="clearCookies()">Clear All Cookies</button>
+        </div>
+    </div>
+</body>
+<script>
 let autoOpenSaved = true;
 let domain = 'e621.net';
 let postsData = [];
@@ -875,29 +885,41 @@ let blacklistTags = '-shota -scat -gore';
 let importDataCache = null;
 
 function loadSettings() {
-    filterNsfw = getLocalStorage('filterNsfw') !== false; // по умолчанию true
+    filterNsfw = getLocalStorage('filterNsfw') !== false;
     proxyTemplate = getLocalStorage('proxyTemplate') || '';
     delayBeforeNextImage = getLocalStorage('delayBeforeNextImage') || 3000;
-    autoOpenSaved = getLocalStorage('autoOpenSaved') !== false; // по умолчанию true
-    blacklistTags = getLocalStorage('blacklistTags') || '-shota -scat -gore'; // загружаем блэклист
+    autoOpenSaved = getLocalStorage('autoOpenSaved') !== false;
+    blacklistTags = getLocalStorage('blacklistTags') || '-shota -scat -gore';
     
-    // Обновляем UI
     document.getElementById('filterNsfwToggle').checked = filterNsfw;
     document.getElementById('autoOpenSavedToggle').checked = autoOpenSaved;
     document.getElementById('proxyInput').value = proxyTemplate;
     document.getElementById('delayInput').value = delayBeforeNextImage;
-    document.getElementById('blacklistInput').value = blacklistTags; // устанавливаем значение блэклиста
+    document.getElementById('blacklistInput').value = blacklistTags;
+
+    // Disable NSFW and blacklist settings for nekos.moe
+    updateSettingsVisibility();
 }
 
+function updateSettingsVisibility() {
+    const nsfwSetting = document.getElementById('filterNsfwSetting');
+    const blacklistSetting = document.getElementById('blacklistSetting');
+    if (domain === 'nekos.moe') {
+        nsfwSetting.classList.add('disabled');
+        blacklistSetting.classList.add('disabled');
+    } else {
+        nsfwSetting.classList.remove('disabled');
+        blacklistSetting.classList.remove('disabled');
+    }
+}
 
 function saveSettings() {
     filterNsfw = document.getElementById('filterNsfwToggle').checked;
     autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
     proxyTemplate = document.getElementById('proxyInput').value.trim();
     delayBeforeNextImage = parseInt(document.getElementById('delayInput').value) || 3000;
-    blacklistTags = document.getElementById('blacklistInput').value.trim() || '-shota -scat -gore'; // сохраняем блэклист
+    blacklistTags = document.getElementById('blacklistInput').value.trim() || '-shota -scat -gore';
     
-    // Валидация значения задержки
     if (delayBeforeNextImage < 1000) delayBeforeNextImage = 1000;
     if (delayBeforeNextImage > 30000) delayBeforeNextImage = 30000;
     
@@ -905,13 +927,12 @@ function saveSettings() {
     setLocalStorage('autoOpenSaved', autoOpenSaved);
     setLocalStorage('proxyTemplate', proxyTemplate);
     setLocalStorage('delayBeforeNextImage', delayBeforeNextImage);
-    setLocalStorage('blacklistTags', blacklistTags); // сохраняем блэклист
+    setLocalStorage('blacklistTags', blacklistTags);
     
     alert('Settings saved!');
     closeModal('settingsModal');
 }
 
-// Функция экспорта сохранений
 function exportSaves() {
     const savedPics = getLocalStorage('savedPics') || [];
     if (savedPics.length === 0) {
@@ -938,7 +959,6 @@ function exportSaves() {
     console.log('Exported', savedPics.length, 'saved pictures');
 }
 
-// Функция импорта сохранений
 function importSaves() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -959,9 +979,7 @@ function importSaves() {
                     return;
                 }
                 
-                // Показываем окно выбора типа импорта
                 document.getElementById('importTypeModal').style.display = 'flex';
-                
             } catch (error) {
                 console.error('Error parsing import file:', error);
                 alert('Error reading import file. Please make sure it is a valid .bestofe file.');
@@ -973,6 +991,7 @@ function importSaves() {
     
     input.click();
 }
+
 function confirmImport(importType) {
     if (!importDataCache) {
         alert('No import data available.');
@@ -984,11 +1003,9 @@ function confirmImport(importType) {
     let importedCount = 0;
     
     if (importType === 'overwrite') {
-        // Заменяем все текущие сохранения
         currentSavedPics = importedPics;
         importedCount = importedPics.length;
     } else {
-        // Добавляем к текущим (игнорируя дубликаты)
         importedPics.forEach(pic => {
             if (!currentSavedPics.some(existingPic => existingPic.id === pic.id)) {
                 currentSavedPics.push(pic);
@@ -1005,9 +1022,7 @@ function confirmImport(importType) {
     
     alert(`Successfully imported ${importedCount} pictures${importType === 'add' ? ` (${importedPics.length - importedCount} were duplicates)` : ''}`);
 }
-// Функция скачивания всех сохраненных изображений
-// Функция скачивания всех сохраненных изображений
-// Функция скачивания всех сохраненных изображений
+
 function downloadAllSaves() {
     const savedPics = getLocalStorage('savedPics') || [];
     if (savedPics.length === 0) {
@@ -1018,7 +1033,6 @@ function downloadAllSaves() {
     const confirmed = confirm(`This will download ${savedPics.length} images to your computer. This may take a while. Continue?`);
     if (!confirmed) return;
 
-    // Создаем контейнер для прогресса
     const progressDiv = document.createElement('div');
     progressDiv.className = 'download-progress active';
     progressDiv.innerHTML = `
@@ -1033,30 +1047,20 @@ function downloadAllSaves() {
     let errorCount = 0;
     let cancelled = false;
 
-    // Глобальная функция отмены
     window.cancelDownload = function() {
         cancelled = true;
         progressDiv.remove();
         alert('Download cancelled');
     };
 
-    // Упрощенная функция скачивания
     function downloadImage(pic) {
         return new Promise((resolve, reject) => {
             const link = document.createElement('a');
             link.href = pic.url;
-            
-            // Получаем расширение файла
             const extension = getFileExtension(pic.url);
             link.download = `bestofe_${pic.id}.${extension}`;
-            
-            // Добавляем в DOM
             document.body.appendChild(link);
-            
-            // Кликаем по ссылке
             link.click();
-            
-            // Удаляем ссылку
             setTimeout(() => {
                 document.body.removeChild(link);
                 resolve();
@@ -1064,7 +1068,6 @@ function downloadAllSaves() {
         });
     }
 
-    // Функция для последовательного скачивания
     function downloadNext() {
         if (cancelled || downloadedCount + errorCount >= savedPics.length) {
             progressDiv.remove();
@@ -1086,8 +1089,6 @@ function downloadAllSaves() {
                 console.log(`Downloaded ${downloadedCount}/${savedPics.length}`);
                 progressElement.textContent = downloadedCount + errorCount;
                 statusElement.textContent = `Downloaded: ${pic.id}`;
-                
-                // Задержка между скачиваниями
                 setTimeout(downloadNext, 500);
             })
             .catch(error => {
@@ -1095,8 +1096,6 @@ function downloadAllSaves() {
                 console.error(`Failed to download image ${pic.id}:`, error);
                 progressElement.textContent = downloadedCount + errorCount;
                 statusElement.textContent = `Failed: ${pic.id}`;
-                
-                // Продолжаем со следующей картинкой
                 setTimeout(downloadNext, 500);
             });
     }
@@ -1104,7 +1103,6 @@ function downloadAllSaves() {
     downloadNext();
 }
 
-// Функция определения расширения файла
 function getFileExtension(url) {
     const urlParts = url.split('.');
     let extension = 'jpg';
@@ -1118,47 +1116,39 @@ function getFileExtension(url) {
     return extension;
 }
 
-// Utility to check if running locally
 function isLocalEnvironment() {
     return window.location.protocol === 'file:';
 }
+
 function buildApiUrl(baseUrl, tags) {
+    if (domain === 'nekos.moe') {
+        let apiUrl = `https://nekos.moe/api/v1/random/image?count=${postsPerPage}`;
+        if (proxyTemplate) {
+            apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
+        }
+        return apiUrl;
+    }
+
     let tagsQuery = tags;
-    
-    // Добавляем rating:s если включен фильтр
-    if (filterNsfw) {
-        if (tagsQuery) {
-            tagsQuery += ' rating:s';
-        } else {
-            tagsQuery = 'rating:s';
-        }
+    if (filterNsfw && domain !== 'nekos.moe') {
+        tagsQuery = tagsQuery ? `${tagsQuery} rating:s` : 'rating:s';
     }
     
-    // Добавляем блэклист теги
-    if (blacklistTags) {
-        if (tagsQuery) {
-            tagsQuery += ' ' + blacklistTags;
-        } else {
-            tagsQuery = blacklistTags;
-        }
+    if (blacklistTags && domain !== 'nekos.moe') {
+        tagsQuery = tagsQuery ? `${tagsQuery} ${blacklistTags}` : blacklistTags;
     }
     
-    if (tagsQuery) {
-        tagsQuery += ' order:random';
-    } else {
-        tagsQuery = 'order:random';
-    }
+    tagsQuery = tagsQuery ? `${tagsQuery} order:random` : 'order:random';
     
     let apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
     
-    // Применяем proxy если указан
     if (proxyTemplate) {
         apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
     }
     
     return apiUrl;
 }
-// LocalStorage handling functions
+
 function setLocalStorage(name, value) {
     try {
         localStorage.setItem(name, JSON.stringify(value));
@@ -1191,19 +1181,19 @@ function clearLocalStorage() {
 }
 
 function saveImageToStorage(post) {
-    if (!post || !post.id || !post.file || !post.file.url) {
+    if (!post || !post.id || !post.file?.url && domain !== 'nekos.moe' || !post.url && domain === 'nekos.moe') {
         console.error('Invalid post data for saving:', post);
         alert('Cannot save image: Invalid or missing data.');
         return false;
     }
 
     let savedPics = getLocalStorage('savedPics') || [];
+    const imageUrl = domain === 'nekos.moe' ? post.url : post.file.url;
 
-    // Check if image already exists
     if (!savedPics.some(pic => pic.id === post.id)) {
         savedPics.push({
             id: post.id,
-            url: post.file.url,
+            url: imageUrl,
             domain: domain,
             tags: post.tags || {},
             score: post.score || {},
@@ -1218,7 +1208,6 @@ function saveImageToStorage(post) {
     }
 }
 
-// Modal handling functions
 function openSavedPics() {
     const modal = document.getElementById('savedPicsModal');
     modal.style.display = 'flex';
@@ -1226,7 +1215,7 @@ function openSavedPics() {
 }
 
 function openSettings() {
-    loadSettings(); // Загружаем текущие настройки при открытии
+    loadSettings();
     document.getElementById('settingsModal').style.display = 'flex';
 }
 
@@ -1261,7 +1250,7 @@ function displaySavedPics() {
             img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
         };
 
-        img.addEventListener('click', () => window.open(`https://${pic.domain}/posts/${pic.id}`, '_blank'));
+        img.addEventListener('click', () => window.open(pic.domain === 'nekos.moe' ? `https://nekos.moe/post/${pic.id}` : `https://${pic.domain}/posts/${pic.id}`, '_blank'));
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-pic';
@@ -1284,7 +1273,6 @@ function removeSavedPic(id) {
     displaySavedPics();
 }
 
-// Standard Mode Scripts
 function updatePostCount(value) {
     postsPerPage = parseInt(value);
     document.getElementById('postCountValue').textContent = postsPerPage;
@@ -1292,11 +1280,13 @@ function updatePostCount(value) {
 }
 
 async function fetchRandomPosts(clearTags = false) {
-    if (clearTags) {
+    if (clearTags && domain !== 'nekos.moe') {
         document.getElementById('standardTagInput').value = '';
         currentTagsStandard = '';
-    } else {
+    } else if (domain !== 'nekos.moe') {
         currentTagsStandard = document.getElementById('standardTagInput').value.trim();
+    } else {
+        currentTagsStandard = '';
     }
 
     const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
@@ -1312,7 +1302,17 @@ async function fetchRandomPosts(clearTags = false) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json();
-        postsData = data.posts || [];
+        if (domain === 'nekos.moe') {
+            postsData = data.images && data.images.length > 0 ? data.images.map(img => ({
+                id: img.id,
+                url: `https://nekos.moe/image/${img.id}.jpg`,
+                tags: img.tags || {},
+                score: { total: img.favourites || 0 },
+                fav_count: img.favourites || 0
+            })) : [];
+        } else {
+            postsData = data.posts || [];
+        }
         if (postsData.length === 0) {
             throw new Error('No posts returned from API');
         }
@@ -1330,19 +1330,20 @@ function displayPosts(posts) {
     document.getElementById('standardErrorWarning').textContent = '';
 
     posts.forEach((post, index) => {
-        if (post.file && post.file.url) {
+        if (post.file && post.file.url || post.url && domain === 'nekos.moe') {
             const postDiv = document.createElement('div');
             postDiv.className = 'post';
             postDiv.dataset.index = index;
             const img = document.createElement('img');
-            setupImageWithTimeout(img, post.file.url, index, 'standard');
+            const imageUrl = domain === 'nekos.moe' ? post.url : post.file.url;
+            setupImageWithTimeout(img, imageUrl, index, 'standard');
             const viewsDiv = document.createElement('div');
             viewsDiv.className = 'views';
             const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
             viewsDiv.textContent = `cool ratio: ${ratio}`;
             const viewButton = document.createElement('div');
             viewButton.textContent = 'View on site';
-            viewButton.onclick = () => window.open(`https://${domain}/posts/${post.id}`, '_blank');
+            viewButton.onclick = () => window.open(domain === 'nekos.moe' ? `https://nekos.moe/post/${post.id}` : `https://${domain}/posts/${post.id}`, '_blank');
             postDiv.appendChild(img);
             postDiv.appendChild(viewsDiv);
             postDiv.appendChild(viewButton);
@@ -1402,7 +1403,18 @@ async function handleImageClick(index) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             const data = await response.json();
-            const newPosts = data.posts || [];
+            let newPosts = [];
+            if (domain === 'nekos.moe') {
+                newPosts = data.images && data.images.length > 0 ? data.images.map(img => ({
+                    id: img.id,
+                    url: `https://nekos.moe/image/${img.id}.jpg`,
+                    tags: img.tags || {},
+                    score: { total: img.favourites || 0 },
+                    fav_count: img.favourites || 0
+                })) : [];
+            } else {
+                newPosts = data.posts || [];
+            }
             const selectedPost = postsData[index];
             let newPostsIndex = 0;
             postsData = postsData.map((post, i) => {
@@ -1416,18 +1428,14 @@ async function handleImageClick(index) {
             console.error('Error fetching new posts:', error);
             document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
-    }, delayBeforeNextImage); // Используем настраиваемую задержку
+    }, delayBeforeNextImage);
 }
 
-
-// Tinder Mode Scripts
-// Tinder Mode Scripts
 async function fetchRandomImage() {
-    currentTagsTinder = document.getElementById('tinderTagInput').value.trim();
+    currentTagsTinder = domain !== 'nekos.moe' ? document.getElementById('tinderTagInput').value.trim() : '';
     const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
     const apiUrl = buildApiUrl(domain, currentTagsTinder);
 
-    // Скрываем кнопки до загрузки новой картинки
     document.getElementById('tinderButtons').style.display = 'none';
 
     try {
@@ -1440,20 +1448,34 @@ async function fetchRandomImage() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json();
-        if (data.posts && data.posts.length > 0) {
-            currentPostTinder = data.posts[0];
-            displayImage(currentPostTinder);
-            // Показываем кнопки после успешной загрузки картинки
-            document.getElementById('tinderButtons').style.display = 'block';
+        if (domain === 'nekos.moe') {
+            if (data.images && data.images.length > 0) {
+                currentPostTinder = {
+                    id: data.images[0].id,
+                    url: `https://nekos.moe/image/${data.images[0].id}.jpg`,
+                    tags: data.images[0].tags || {},
+                    score: { total: data.images[0].favourites || 0 },
+                    fav_count: data.images[0].favourites || 0
+                };
+                displayImage(currentPostTinder);
+                document.getElementById('tinderButtons').style.display = 'block';
+            } else {
+                throw new Error('No posts returned');
+            }
         } else {
-            throw new Error('No posts returned');
+            if (data.posts && data.posts.length > 0) {
+                currentPostTinder = data.posts[0];
+                displayImage(currentPostTinder);
+                document.getElementById('tinderButtons').style.display = 'block';
+            } else {
+                throw new Error('No posts returned');
+            }
         }
     } catch (error) {
         console.error('Error fetching image:', error);
         document.getElementById('tinderPostContainer').innerHTML = '<p>Error loading image. Trying again in 1 second...</p>';
         document.getElementById('tinderErrorWarning').textContent = 'Error loading image. Auto-retrying...';
         
-        // Автоматический повтор через 1 секунду при ошибке
         setTimeout(() => {
             console.log('Auto-retrying after error...');
             fetchRandomImage();
@@ -1466,18 +1488,18 @@ function displayImage(post) {
     container.innerHTML = '';
     document.getElementById('tinderErrorWarning').textContent = '';
 
-    if (post.file && post.file.url) {
+    const imageUrl = domain === 'nekos.moe' ? post.url : post.file?.url;
+    if (imageUrl) {
         const img = document.createElement('img');
         img.style.maxWidth = `${window.screen.width - 10}px`;
         img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
         img.style.height = 'auto';
         img.style.display = 'block';
         img.style.margin = '0 auto';
-        setupImageWithTimeout(img, post.file.url, 0, 'tinder');
+        setupImageWithTimeout(img, imageUrl, 0, 'tinder');
         container.appendChild(img);
     } else {
         container.innerHTML = '<p>No valid image found.</p>';
-        // Скрываем кнопки если нет валидной картинки
     }
 }
 
@@ -1485,9 +1507,8 @@ async function saveImage() {
     if (currentPostTinder) {
         if (saveImageToStorage(currentPostTinder)) {
             console.log('Image saved successfully:', currentPostTinder.id);
-            // Открываем ссылку только если включена опция autoOpenSaved
             if (autoOpenSaved) {
-                window.open(`https://${domain}/posts/${currentPostTinder.id}`, '_blank');
+                window.open(domain === 'nekos.moe' ? `https://nekos.moe/post/${currentPostTinder.id}` : `https://${domain}/posts/${currentPostTinder.id}`, '_blank');
             }
         } else {
             console.log('Image not saved (already exists or invalid):', currentPostTinder.id);
@@ -1496,7 +1517,6 @@ async function saveImage() {
             await fetchRandomImage();
         } catch (error) {
             console.error('Error in saveImage:', error);
-            // Автоматический повтор уже обрабатывается в fetchRandomImage
         }
     } else {
         console.error('No current post to save in Tinder mode');
@@ -1509,7 +1529,6 @@ async function skipImage() {
         await fetchRandomImage();
     } catch (error) {
         console.error('Error in skipImage:', error);
-        // В случае ошибки автоматический повтор уже обрабатывается в fetchRandomImage
     }
 }
 
@@ -1535,30 +1554,49 @@ function selectDomain(selectedDomain) {
     domain = selectedDomain;
     document.getElementById('domainContainer').classList.remove('active');
     document.getElementById('modeContainer').classList.add('active');
-    // УБИРАЕМ скрытие кнопок здесь - они должны оставаться видимыми
-    // document.querySelector('.nav-buttons').classList.add('hidden');
+    
+    // Hide tag inputs and settings for nekos.moe
+    const standardTagInput = document.getElementById('standardTagInput');
+    const tinderTagInput = document.getElementById('tinderTagInput');
+    const standardInputContainer = standardTagInput.parentElement;
+    const tinderInputContainer = tinderTagInput.parentElement;
+    const sliderContainer = document.querySelector('.slider-container');
+    
+    if (domain === 'nekos.moe') {
+        standardInputContainer.classList.add('hidden');
+        tinderInputContainer.classList.add('hidden');
+        sliderContainer.classList.add('hidden');
+    } else {
+        standardInputContainer.classList.remove('hidden');
+        tinderInputContainer.classList.remove('hidden');
+        sliderContainer.classList.remove('hidden');
+    }
 }
 
 function startStandardMode() {
     document.getElementById('modeContainer').classList.remove('active');
     document.getElementById('standardContainer').classList.add('active');
     hideFixLink();
-    // Теперь скрываем кнопки только при старте режима
     document.querySelector('.nav-buttons').classList.remove('hidden');
     document.getElementById('footerLink').style.display = 'block';
+    if (domain === 'nekos.moe') {
+        fetchRandomPosts(true);
+    }
 }
 
 function startTinderMode() {
     document.getElementById('modeContainer').classList.remove('active');
     document.getElementById('tinderContainer').classList.add('active');
     hideFixLink();
-    // Теперь скрываем кнопки только при старте режима
     document.querySelector('.nav-buttons').classList.remove('hidden');
     document.getElementById('footerLink').style.display = 'block';
+    if (domain === 'nekos.moe') {
+        fetchRandomImage();
+    }
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
 });
 </script>
-</body>
 </html>
