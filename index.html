@@ -75,7 +75,22 @@ body {
 #importTypeModal .modal-content {
     max-width: 400px;
 }
+/* Добавляем в существующие стили */
+body.drag-over {
+    outline: 3px dashed #2a6b9b !important;
+    outline-offset: -10px !important;
+}
 
+/* Стиль для заголовка предпросмотра */
+.preview-header {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: #3b4a5a;
+    border-radius: 8px;
+    border: 2px solid #2a6b9b;
+}
 #importTypeModal p {
     text-align: center;
     margin-bottom: 20px;
@@ -815,17 +830,17 @@ button:hover {
     </div>
 
     <div id="savedPicsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
-            <h2>Saved Pictures</h2>
-            <div class="saved-pics-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="nav-button" onclick="exportSaves()">Export Saves</button>
-                <button class="nav-button" onclick="importSaves()">Import Saves</button>
-                <button class="nav-button" onclick="downloadAllSaves()">Download All</button>
-            </div>
-            <div class="saved-pics-container" id="savedPicsContainer"></div>
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('savedPicsModal')">&times;</span>
+        <h2>Saved Pictures</h2>
+        <div class="saved-pics-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="nav-button" onclick="exportSaves()">Export Saves</button>
+            <button class="nav-button" onclick="importSaves()">Import Saves</button>
+            <button class="nav-button" onclick="previewImportFile()">Preview Import File</button>
         </div>
+        <div class="saved-pics-container" id="savedPicsContainer"></div>
     </div>
+</div>
 
     <div id="importTypeModal" class="modal">
         <div class="modal-content">
@@ -1226,7 +1241,10 @@ function closeModal(modalId) {
 function displaySavedPics() {
     const container = document.getElementById('savedPicsContainer');
     container.innerHTML = '';
-    const savedPics = getLocalStorage('savedPics') || [];
+    let savedPics = getLocalStorage('savedPics') || [];
+
+    // Реверс массива, чтобы новые сохранения были в начале
+    savedPics = savedPics.reverse();
 
     if (savedPics.length === 0) {
         container.innerHTML = '<p>No saved pictures yet.</p>';
@@ -1265,7 +1283,161 @@ function displaySavedPics() {
         container.appendChild(picDiv);
     });
 }
+function previewImportFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.bestofe,application/json';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importData = JSON.parse(e.target.result);
+                const importedPics = importData.savedPics || [];
+                
+                if (importedPics.length === 0) {
+                    alert('No valid saved pictures found in the file.');
+                    return;
+                }
+                
+                // Показываем предпросмотр вместо импорта
+                displayPreviewPics(importedPics, file.name);
+            } catch (error) {
+                console.error('Error parsing import file:', error);
+                alert('Error reading import file. Please make sure it is a valid .bestofe file.');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
 
+// Функция для отображения предпросмотра
+function displayPreviewPics(pics, fileName) {
+    const container = document.getElementById('savedPicsContainer');
+    container.innerHTML = '';
+    
+    // Добавляем заголовок предпросмотра
+    const previewHeader = document.createElement('div');
+    previewHeader.style.gridColumn = '1 / -1';
+    previewHeader.style.textAlign = 'center';
+    previewHeader.style.marginBottom = '15px';
+    previewHeader.style.padding = '10px';
+    previewHeader.style.backgroundColor = '#3b4a5a';
+    previewHeader.style.borderRadius = '5px';
+    previewHeader.style.border = '2px solid #2a6b9b';
+    previewHeader.innerHTML = `
+        <h3 style="margin: 0 0 10px 0; color: #2a6b9b;">Preview: ${fileName}</h3>
+        <p style="margin: 0 0 15px 0;">Showing ${pics.length} pictures from import file</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="nav-button" onclick="displaySavedPics()">Back to My Saved Pics</button>
+            <button class="nav-button" onclick="importPreviewedPics()" style="background-color: #2a9b2a;">Import All Pictures</button>
+        </div>
+    `;
+    container.appendChild(previewHeader);
+
+    if (pics.length === 0) {
+        container.innerHTML = '<p>No pictures found in the file.</p>';
+        return;
+    }
+
+    pics.forEach((pic, index) => {
+        const picDiv = document.createElement('div');
+        picDiv.className = 'saved-pic';
+
+        const img = document.createElement('img');
+        img.src = pic.url;
+        img.alt = 'Preview image';
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.borderRadius = '5px';
+        img.style.cursor = 'pointer';
+
+        img.onerror = function() {
+            console.log('Failed to load preview image:', pic.url);
+            img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+        };
+
+        img.addEventListener('click', () => window.open(pic.domain === 'nekos.moe' ? `https://nekos.moe/post/${pic.id}` : `https://${pic.domain}/posts/${pic.id}`, '_blank'));
+
+        const infoDiv = document.createElement('div');
+        infoDiv.style.background = 'rgba(0, 0, 0, 0.7)';
+        infoDiv.style.color = '#d3d7e0';
+        infoDiv.style.padding = '5px';
+        infoDiv.style.fontSize = '12px';
+        infoDiv.style.borderRadius = '3px';
+        infoDiv.style.marginTop = '5px';
+        infoDiv.innerHTML = `ID: ${pic.id}`;
+
+        picDiv.appendChild(img);
+        picDiv.appendChild(infoDiv);
+        container.appendChild(picDiv);
+    });
+}
+function importPreviewedPics() {
+    const previewHeader = document.querySelector('#savedPicsContainer > div:first-child');
+    if (!previewHeader || !previewHeader.textContent.includes('Preview:')) {
+        alert('No preview data available.');
+        return;
+    }
+    
+    // Находим все картинки в предпросмотре и собираем данные
+    const picElements = document.querySelectorAll('#savedPicsContainer .saved-pic');
+    const picsToImport = [];
+    
+    picElements.forEach(picElement => {
+        const img = picElement.querySelector('img');
+        const infoDiv = picElement.querySelector('div');
+        
+        if (img && infoDiv) {
+            const id = infoDiv.textContent.replace('ID: ', '').trim();
+            const url = img.src;
+            
+            // Определяем домен из URL
+            let domain = 'e621.net';
+            if (url.includes('nekos.moe')) {
+                domain = 'nekos.moe';
+            } else if (url.includes('e926.net')) {
+                domain = 'e926.net';
+            }
+            
+            picsToImport.push({
+                id: id,
+                url: url,
+                domain: domain,
+                tags: {},
+                score: {},
+                fav_count: 0
+            });
+        }
+    });
+    
+    if (picsToImport.length === 0) {
+        alert('No pictures to import.');
+        return;
+    }
+    
+    // Импортируем картинки
+    let currentSavedPics = getLocalStorage('savedPics') || [];
+    let importedCount = 0;
+    
+    picsToImport.forEach(pic => {
+        if (!currentSavedPics.some(existingPic => existingPic.id === pic.id)) {
+            currentSavedPics.push(pic);
+            importedCount++;
+        }
+    });
+    
+    setLocalStorage('savedPics', currentSavedPics);
+    displaySavedPics();
+    
+    alert(`Successfully imported ${importedCount} pictures${picsToImport.length - importedCount > 0 ? ` (${picsToImport.length - importedCount} were duplicates)` : ''}`);
+}
 function removeSavedPic(id) {
     let savedPics = getLocalStorage('savedPics') || [];
     savedPics = savedPics.filter(pic => pic.id !== id);
@@ -1594,7 +1766,96 @@ function startTinderMode() {
         fetchRandomImage();
     }
 }
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+    setupDragAndDrop();
+});
 
+// Новая функция для настройки drag and drop
+function setupDragAndDrop() {
+    const dropZone = document.body;
+
+    // Предотвращаем стандартное поведение браузера
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Подсветка зоны при перетаскивании
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropZone.style.outline = '3px dashed #2a6b9b';
+        dropZone.style.outlineOffset = '-10px';
+    }
+
+    function unhighlight() {
+        dropZone.style.outline = 'none';
+        dropZone.style.outlineOffset = '0';
+    }
+
+    // Обработка dropped файлов
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+            const file = files[0];
+            
+            // Проверяем тип файла
+            if (file.type === 'application/json' || file.name.endsWith('.bestofe')) {
+                processDroppedFile(file);
+            } else {
+                alert('Please drop a valid .bestofe or JSON file');
+            }
+        }
+        
+        unhighlight();
+    }
+}
+
+// Функция для обработки dropped файла
+function processDroppedFile(file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+            const importedPics = importData.savedPics || [];
+            
+            if (importedPics.length === 0) {
+                alert('No valid saved pictures found in the file.');
+                return;
+            }
+            
+            // Автоматически открываем модальное окно и показываем предпросмотр
+            openSavedPics();
+            displayPreviewPics(importedPics, file.name);
+            
+        } catch (error) {
+            console.error('Error parsing dropped file:', error);
+            alert('Error reading file. Please make sure it is a valid .bestofe file.');
+        }
+    };
+    
+    reader.onerror = function() {
+        alert('Error reading file. Please try again.');
+    };
+    
+    reader.readAsText(file);
+}
 document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
 });
