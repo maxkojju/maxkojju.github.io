@@ -62,6 +62,7 @@ body {
     padding: 0;
     min-height: 100vh;
     position: relative;
+    transition: background-color 0.5s ease, color 0.5s ease;
 }
 body.theme-standard {
     background-color: #1a252f;
@@ -558,7 +559,172 @@ body.theme-green .close-button {
     background-color: #2a9b6b;
     color: #d3e0d7;
 }
+/* Добавить в существующие стили */
 
+/* Стили для полей ввода маскотов */
+#mascotDomainInput,
+#mascotModeInput {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #3b4a5a;
+    border-radius: 3px;
+    background-color: #1a252f;
+    color: #d3d7e0;
+    width: 100%;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+#mascotDomainInput:focus,
+#mascotModeInput:focus {
+    outline: none;
+    border-color: #2a6b9b;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    #mascotDomainInput,
+    #mascotModeInput {
+        width: 100%;
+        max-width: calc(100% - 6px);
+        font-size: 14px;
+    }
+}
+
+/* Стили для разных тем */
+body.theme-standard #mascotDomainInput,
+body.theme-standard #mascotModeInput {
+    background-color: #1a252f;
+    border-color: #3b4a5a;
+    color: #d3d7e0;
+}
+
+body.theme-pink #mascotDomainInput,
+body.theme-pink #mascotModeInput {
+    background-color: #2f1a25;
+    border-color: #4a2a35;
+    color: #e0d3d7;
+}
+
+body.theme-green #mascotDomainInput,
+body.theme-green #mascotModeInput {
+    background-color: #1a2f25;
+    border-color: #2a3a35;
+    color: #d3e0d7;
+}
+
+body.theme-white #mascotDomainInput,
+body.theme-white #mascotModeInput {
+    background-color: #ffffff;
+    border-color: #cccccc;
+    color: #333333;
+}
+
+body.theme-black #mascotDomainInput,
+body.theme-black #mascotModeInput {
+    background-color: #1a1a1a;
+    border-color: #333333;
+    color: #ffffff;
+}
+
+/* Добавляем стили для остальных тем */
+body.theme-purple #mascotDomainInput,
+body.theme-purple #mascotModeInput {
+    background-color: #2a1a35;
+    border-color: #3a2a4a;
+    color: #e0d3e7;
+}
+
+body.theme-orange #mascotDomainInput,
+body.theme-orange #mascotModeInput {
+    background-color: #352a1a;
+    border-color: #4a3a2a;
+    color: #e7e0d3;
+}
+
+body.theme-teal #mascotDomainInput,
+body.theme-teal #mascotModeInput {
+    background-color: #1a2f2f;
+    border-color: #2a4a4a;
+    color: #d3e7e7;
+}
+
+body.theme-yellow #mascotDomainInput,
+body.theme-yellow #mascotModeInput {
+    background-color: #35351a;
+    border-color: #4a4a2a;
+    color: #e7e7d3;
+}
+
+body.theme-red #mascotDomainInput,
+body.theme-red #mascotModeInput {
+    background-color: #351a1a;
+    border-color: #4a2a2a;
+    color: #e7d3d3;
+}
+
+body.theme-blue #mascotDomainInput,
+body.theme-blue #mascotModeInput {
+    background-color: #1a2535;
+    border-color: #2a3a4a;
+    color: #d3d7e7;
+}
+
+body.theme-brown #mascotDomainInput,
+body.theme-brown #mascotModeInput {
+    background-color: #2a1a1a;
+    border-color: #3a2a2a;
+    color: #e7d7d3;
+}
+
+body.theme-cyan #mascotDomainInput,
+body.theme-cyan #mascotModeInput {
+    background-color: #1a2f25;
+    border-color: #2a4a3a;
+    color: #d3e7e0;
+}
+
+body.theme-magenta #mascotDomainInput,
+body.theme-magenta #mascotModeInput {
+    background-color: #351a35;
+    border-color: #4a2a4a;
+    color: #e7d3e7;
+}
+
+body.theme-lime #mascotDomainInput,
+body.theme-lime #mascotModeInput {
+    background-color: #25351a;
+    border-color: #3a4a2a;
+    color: #e7e7d3;
+}
+
+body.theme-indigo #mascotDomainInput,
+body.theme-indigo #mascotModeInput {
+    background-color: #1a1a35;
+    border-color: #2a2a4a;
+    color: #d3d3e7;
+}
+
+body.theme-amber #mascotDomainInput,
+body.theme-amber #mascotModeInput {
+    background-color: #352a1a;
+    border-color: #4a3a2a;
+    color: #e7e0d3;
+}
+
+body.theme-deep-purple #mascotDomainInput,
+body.theme-deep-purple #mascotModeInput {
+    background-color: #1a0f2a;
+    border-color: #2a1a3a;
+    color: #d3cfe7;
+}
+
+body.theme-deep-orange #mascotDomainInput,
+body.theme-deep-orange #mascotModeInput {
+    background-color: #351a0f;
+    border-color: #4a2a1a;
+    color: #e7d7d3;
+}
 body.theme-green button:hover,
 body.theme-green .nav-button:hover,
 body.theme-green .domain-button:hover,
@@ -1797,7 +1963,7 @@ button:hover {
             <div class="domain-buttons">
                 <button class="domain-button" onclick="selectDomain('e926.net')">e926.net</button>
                 <button class="domain-button unsafe" onclick="selectDomain('e621.net')">e621.net (unsafe)</button>
-                <button class="domain-button moe" onclick="selectDomain('nekos.moe')">nekos.moe (cropped + unsafe)</button>
+                <button class="domain-button moe" onclick="selectDomain('nekos.moe')">nekos.moe (no search)</button>
             </div>
         </div>
     </div>
@@ -1900,6 +2066,16 @@ button:hover {
                 <label for="proxyInput">Proxy URL template:</label>
                 <input type="text" id="proxyInput" placeholder="https://your-proxy.com/?url=[URL]" style="width: 100%; margin-top: 5px;">
             </div>
+            <!-- Добавить после существующих полей в settingsModal -->
+<div class="setting-item">
+    <label for="mascotDomainInput">Mascot image for domain page:</label>
+    <input type="text" id="mascotDomainInput" placeholder="https://example.com/domain-mascot.png" style="width: 100%; margin-top: 5px;">
+</div>
+
+<div class="setting-item">
+    <label for="mascotModeInput">Mascot image for mode page:</label>
+    <input type="text" id="mascotModeInput" placeholder="https://example.com/mode-mascot.png" style="width: 100%; margin-top: 5px;">
+</div>
             <!-- Добавить в модальное окно настроек (после blacklistSetting) -->
 <!-- Заменяем существующий блок выбора тем в модальном окне настроек -->
 <div class="setting-item">
@@ -1941,6 +2117,21 @@ let delayBeforeNextImage = 3000;
 let blacklistTags = '-shota -scat -gore';
 let importDataCache = null;
 
+function clearCookies() {
+    try {
+        localStorage.clear();
+        // Сброс маскотов на значения по умолчанию
+        const defaultDomainMascot = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760458897.png';
+        const defaultModeMascot = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760459670.png';
+        applyMascotImages(defaultDomainMascot, defaultModeMascot);
+        alert('All settings cleared! Mascots reset to default.');
+        closeModal('settingsModal');
+        loadSettings(); // Перезагрузка настроек
+    } catch (e) {
+        console.error('Error clearing localStorage:', e);
+        alert('Failed to clear settings.');
+    }
+}
 function loadSettings() {
     filterNsfw = getLocalStorage('filterNsfw') !== false;
     proxyTemplate = getLocalStorage('proxyTemplate') || '';
@@ -1948,17 +2139,40 @@ function loadSettings() {
     autoOpenSaved = getLocalStorage('autoOpenSaved') !== false;
     blacklistTags = getLocalStorage('blacklistTags') || '-shota -scat -gore';
     const savedTheme = getLocalStorage('theme') || 'standard';
+    
+    // Загрузка URL маскотов
+    const mascotDomainUrl = getLocalStorage('mascotDomainUrl') || 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760458897.png';
+    const mascotModeUrl = getLocalStorage('mascotModeUrl') || 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760459670.png';
+    
     setTheme(savedTheme);
     document.getElementById('filterNsfwToggle').checked = filterNsfw;
     document.getElementById('autoOpenSavedToggle').checked = autoOpenSaved;
     document.getElementById('proxyInput').value = proxyTemplate;
     document.getElementById('delayInput').value = delayBeforeNextImage;
     document.getElementById('blacklistInput').value = blacklistTags;
+    
+    // Установка значений для полей маскотов
+    document.getElementById('mascotDomainInput').value = mascotDomainUrl;
+    document.getElementById('mascotModeInput').value = mascotModeUrl;
+    
+    // Применение маскотов
+    applyMascotImages(mascotDomainUrl, mascotModeUrl);
 
     // Disable NSFW and blacklist settings for nekos.moe
     updateSettingsVisibility();
 }
-
+function applyMascotImages(domainUrl, modeUrl) {
+    const domainContainer = document.getElementById('domainContainer');
+    const modeContainer = document.getElementById('modeContainer');
+    
+    if (domainUrl) {
+        domainContainer.style.backgroundImage = `url('${domainUrl}')`;
+    }
+    
+    if (modeUrl) {
+        modeContainer.style.backgroundImage = `url('${modeUrl}')`;
+    }
+}
 function updateSettingsVisibility() {
     const nsfwSetting = document.getElementById('filterNsfwSetting');
     const blacklistSetting = document.getElementById('blacklistSetting');
@@ -1978,8 +2192,13 @@ function saveSettings() {
     delayBeforeNextImage = parseInt(document.getElementById('delayInput').value) || 3000;
     blacklistTags = document.getElementById('blacklistInput').value.trim() || '-shota -scat -gore';
     
+    // Сохранение URL маскотов
+    const mascotDomainUrl = document.getElementById('mascotDomainInput').value.trim();
+    const mascotModeUrl = document.getElementById('mascotModeInput').value.trim();
+    
     if (delayBeforeNextImage < 1000) delayBeforeNextImage = 1000;
     if (delayBeforeNextImage > 30000) delayBeforeNextImage = 30000;
+    
     const activeTheme = document.querySelector('.theme-option.active').dataset.theme;
     setLocalStorage('theme', activeTheme);
     setLocalStorage('filterNsfw', filterNsfw);
@@ -1987,6 +2206,13 @@ function saveSettings() {
     setLocalStorage('proxyTemplate', proxyTemplate);
     setLocalStorage('delayBeforeNextImage', delayBeforeNextImage);
     setLocalStorage('blacklistTags', blacklistTags);
+    
+    // Сохранение URL маскотов
+    setLocalStorage('mascotDomainUrl', mascotDomainUrl);
+    setLocalStorage('mascotModeUrl', mascotModeUrl);
+    
+    // Применение новых маскотов
+    applyMascotImages(mascotDomainUrl, mascotModeUrl);
     
     alert('Settings saved!');
     closeModal('settingsModal');
