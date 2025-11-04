@@ -1964,6 +1964,7 @@ button:hover {
                 <button class="domain-button" onclick="selectDomain('e926.net')">e926.net</button>
                 <button class="domain-button unsafe" onclick="selectDomain('e621.net')">e621.net (unsafe)</button>
                 <button class="domain-button moe" onclick="selectDomain('nekos.moe')">nekos.moe (no search)</button>
+                <button class="domain-button" onclick="selectDomain('waifu.im')">Waifu.im</button>
             </div>
         </div>
     </div>
@@ -2177,13 +2178,11 @@ function updateSettingsVisibility() {
     const nsfwSetting = document.getElementById('filterNsfwSetting');
     const blacklistSetting = document.getElementById('blacklistSetting');
     if (domain === 'nekos.moe') {
-        // Убираем отключение NSFW настройки
-        // nsfwSetting.classList.add('disabled');
         blacklistSetting.classList.add('disabled');
     } else {
-        nsfwSetting.classList.remove('disabled');
         blacklistSetting.classList.remove('disabled');
     }
+    nsfwSetting.classList.remove('disabled'); // NSFW filter available for all domains
 }
 
 function saveSettings() {
@@ -2431,37 +2430,61 @@ function isLocalEnvironment() {
 }
 
 // В функции buildApiUrl добавить проверку для nekos.moe
-function buildApiUrl(baseUrl, tags) {
-    if (domain === 'nekos.moe') {
-        let apiUrl = `https://nekos.moe/api/v1/random/image?count=${postsPerPage}`;
-        // Добавляем параметр nsfw для nekos.moe
+function buildApiUrl(tags, limit) {
+    let apiUrl;
+    let tagsQuery = tags ? tags.trim() : '';
+
+    if (domain === 'e621.net' || domain === 'e926.net') {
         if (filterNsfw) {
-            apiUrl += '&nsfw=false';
+            tagsQuery = tagsQuery ? `${tagsQuery} rating:s` : 'rating:s';
         }
-        if (proxyTemplate) {
-            apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
+        if (blacklistTags) {
+            tagsQuery = tagsQuery ? `${tagsQuery} ${blacklistTags}` : blacklistTags;
         }
-        return apiUrl;
+        tagsQuery = tagsQuery ? `${tagsQuery} order:random` : 'order:random';
+        apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${limit}`;
+    } else if (domain === 'nekos.moe') {
+        apiUrl = `https://nekos.moe/api/v1/random/image?count=${limit}`;
+        if (filterNsfw) apiUrl += '&nsfw=false';
+    } else if (domain === 'waifu.im') {
+        apiUrl = 'https://api.waifu.im/search';
+        let params = [];
+        let positiveTags = [];
+        let negativeTags = [];
+        if (tagsQuery) {
+            tagsQuery.split(' ').forEach(t => {
+                if (t.startsWith('-')) {
+                    negativeTags.push(t.substring(1));
+                } else if (t) {
+                    positiveTags.push(t);
+                }
+            });
+        }
+        if (blacklistTags) {
+            blacklistTags.split(' ').forEach(bl => {
+                if (bl.startsWith('-')) {
+                    negativeTags.push(bl.substring(1));
+                }
+            });
+        }
+        positiveTags.forEach(tag => params.push(`included_tags=${encodeURIComponent(tag)}`));
+        negativeTags.forEach(tag => params.push(`excluded_tags=${encodeURIComponent(tag)}`));
+        if (filterNsfw) {
+            params.push('is_nsfw=false');
+        } else {
+            params.push('is_nsfw=true');
+        }
+        if (limit > 1) {
+            params.push('many=true');
+        }
+        if (params.length > 0) {
+            apiUrl += '?' + params.join('&');
+        }
     }
 
-    // остальной код без изменений...
-    let tagsQuery = tags;
-    if (filterNsfw && domain !== 'nekos.moe') {
-        tagsQuery = tagsQuery ? `${tagsQuery} rating:s` : 'rating:s';
-    }
-    
-    if (blacklistTags && domain !== 'nekos.moe') {
-        tagsQuery = tagsQuery ? `${tagsQuery} ${blacklistTags}` : blacklistTags;
-    }
-    
-    tagsQuery = tagsQuery ? `${tagsQuery} order:random` : 'order:random';
-    
-    let apiUrl = `https://${domain}/posts.json?tags=${encodeURIComponent(tagsQuery)}&limit=${postsPerPage}`;
-    
     if (proxyTemplate) {
         apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
     }
-    
     return apiUrl;
 }
 
@@ -2498,14 +2521,14 @@ function clearLocalStorage() {
 }
 
 function saveImageToStorage(post) {
-    if (!post || !post.id || !post.file?.url && domain !== 'nekos.moe' || !post.url && domain === 'nekos.moe') {
+    if (!post || !post.id || !post.file?.url && domain !== 'nekos.moe' && domain !== 'waifu.im' || !post.url && (domain === 'nekos.moe' || domain === 'waifu.im')) {
         console.error('Invalid post data for saving:', post);
         alert('Cannot save image: Invalid or missing data.');
         return false;
     }
 
     let savedPics = getLocalStorage('savedPics') || [];
-    const imageUrl = domain === 'nekos.moe' ? post.url : post.file.url;
+    const imageUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file.url;
 
     if (!savedPics.some(pic => pic.id === post.id)) {
         savedPics.push({
@@ -2570,7 +2593,17 @@ function displaySavedPics() {
             img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
         };
 
-        img.addEventListener('click', () => window.open(pic.domain === 'nekos.moe' ? `https://nekos.moe/post/${pic.id}` : `https://${pic.domain}/posts/${pic.id}`, '_blank'));
+        img.addEventListener('click', () => {
+            let viewUrl;
+            if (pic.domain === 'waifu.im') {
+                viewUrl = pic.url;
+            } else if (pic.domain === 'nekos.moe') {
+                viewUrl = `https://nekos.moe/post/${pic.id}`;
+            } else {
+                viewUrl = `https://${pic.domain}/posts/${pic.id}`;
+            }
+            window.open(viewUrl, '_blank');
+        });
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-pic';
@@ -2764,7 +2797,7 @@ async function fetchRandomPosts(clearTags = false) {
     }
 
     const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-    const apiUrl = buildApiUrl(domain, currentTagsStandard);
+    const apiUrl = buildApiUrl(currentTagsStandard, postsPerPage);
 
     try {
         const response = await fetch(apiUrl, {
@@ -2783,6 +2816,14 @@ async function fetchRandomPosts(clearTags = false) {
                 tags: img.tags || {},
                 score: { total: img.favourites || 0 },
                 fav_count: img.favourites || 0
+            })) : [];
+        } else if (domain === 'waifu.im') {
+            postsData = data.images ? data.images.slice(0, postsPerPage).map(img => ({
+                id: img.signature,
+                file: { url: img.url },
+                tags: img.tags,
+                score: { total: 0 },
+                fav_count: 0
             })) : [];
         } else {
             postsData = data.posts || [];
@@ -2908,7 +2949,7 @@ async function handleImageClick(index) {
 async function fetchRandomImage() {
     currentTagsTinder = domain !== 'nekos.moe' ? document.getElementById('tinderTagInput').value.trim() : '';
     const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
-    const apiUrl = buildApiUrl(domain, currentTagsTinder);
+    const apiUrl = buildApiUrl(currentTagsTinder, 1);
 
     document.getElementById('tinderButtons').style.display = 'none';
 
@@ -2930,6 +2971,20 @@ async function fetchRandomImage() {
                     tags: data.images[0].tags || {},
                     score: { total: data.images[0].favourites || 0 },
                     fav_count: data.images[0].favourites || 0
+                };
+                displayImage(currentPostTinder);
+                document.getElementById('tinderButtons').style.display = 'block';
+            } else {
+                throw new Error('No posts returned');
+            }
+        } else if (domain === 'waifu.im') {
+            if (data.images && data.images.length > 0) {
+                currentPostTinder = {
+                    id: data.images[0].signature,
+                    url: data.images[0].url,
+                    tags: data.images[0].tags,
+                    score: { total: 0 },
+                    fav_count: 0
                 };
                 displayImage(currentPostTinder);
                 document.getElementById('tinderButtons').style.display = 'block';
@@ -2962,7 +3017,7 @@ function displayImage(post) {
     container.innerHTML = '';
     document.getElementById('tinderErrorWarning').textContent = '';
 
-    const imageUrl = domain === 'nekos.moe' ? post.url : post.file?.url;
+    const imageUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
     if (imageUrl) {
         const img = document.createElement('img');
         img.style.maxWidth = `${window.screen.width - 10}px`;
@@ -3029,7 +3084,7 @@ function selectDomain(selectedDomain) {
     document.getElementById('domainContainer').classList.remove('active');
     document.getElementById('modeContainer').classList.add('active');
     
-    // Hide tag inputs and settings for nekos.moe
+    // Hide tag inputs and settings for nekos.moe only
     const standardTagInput = document.getElementById('standardTagInput');
     const tinderTagInput = document.getElementById('tinderTagInput');
     const standardInputContainer = standardTagInput.parentElement;
@@ -3040,7 +3095,6 @@ function selectDomain(selectedDomain) {
         standardInputContainer.classList.add('hidden');
         tinderInputContainer.classList.add('hidden');
         sliderContainer.classList.add('hidden');
-        // Не скрываем настройку NSFW для nekos.moe
     } else {
         standardInputContainer.classList.remove('hidden');
         tinderInputContainer.classList.remove('hidden');
@@ -3050,7 +3104,6 @@ function selectDomain(selectedDomain) {
     // Обновляем видимость настроек
     updateSettingsVisibility();
 }
-
 function startStandardMode() {
     document.getElementById('modeContainer').classList.remove('active');
     document.getElementById('standardContainer').classList.add('active');
