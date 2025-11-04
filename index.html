@@ -920,14 +920,14 @@ function updateSettingsVisibility() {
     const nsfwSetting = document.getElementById('filterNsfwSetting');
     const blacklistSetting = document.getElementById('blacklistSetting');
     if (domain === 'nekos.moe') {
-        nsfwSetting.classList.add('disabled');
+        // Для nekos.moe оставляем NSFW настройку активной, но отключаем blacklist
+        nsfwSetting.classList.remove('disabled');
         blacklistSetting.classList.add('disabled');
     } else {
         nsfwSetting.classList.remove('disabled');
         blacklistSetting.classList.remove('disabled');
     }
 }
-
 function saveSettings() {
     filterNsfw = document.getElementById('filterNsfwToggle').checked;
     autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
@@ -1138,6 +1138,10 @@ function isLocalEnvironment() {
 function buildApiUrl(baseUrl, tags) {
     if (domain === 'nekos.moe') {
         let apiUrl = `https://nekos.moe/api/v1/random/image?count=${postsPerPage}`;
+        // Добавляем параметр nsfw для nekos.moe
+        if (filterNsfw) {
+            apiUrl += '&nsfw=false';
+        }
         if (proxyTemplate) {
             apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
         }
@@ -1727,7 +1731,7 @@ function selectDomain(selectedDomain) {
     document.getElementById('domainContainer').classList.remove('active');
     document.getElementById('modeContainer').classList.add('active');
     
-    // Hide tag inputs and settings for nekos.moe
+    // Hide tag inputs and blacklist for nekos.moe, но оставляем NSWF фильтр
     const standardTagInput = document.getElementById('standardTagInput');
     const tinderTagInput = document.getElementById('tinderTagInput');
     const standardInputContainer = standardTagInput.parentElement;
@@ -1738,11 +1742,15 @@ function selectDomain(selectedDomain) {
         standardInputContainer.classList.add('hidden');
         tinderInputContainer.classList.add('hidden');
         sliderContainer.classList.add('hidden');
+        // Не скрываем настройку NSFW для nekos.moe
     } else {
         standardInputContainer.classList.remove('hidden');
         tinderInputContainer.classList.remove('hidden');
         sliderContainer.classList.remove('hidden');
     }
+    
+    // Обновляем видимость настроек
+    updateSettingsVisibility();
 }
 
 function startStandardMode() {
