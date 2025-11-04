@@ -2177,7 +2177,8 @@ function updateSettingsVisibility() {
     const nsfwSetting = document.getElementById('filterNsfwSetting');
     const blacklistSetting = document.getElementById('blacklistSetting');
     if (domain === 'nekos.moe') {
-        nsfwSetting.classList.add('disabled');
+        // Убираем отключение NSFW настройки
+        // nsfwSetting.classList.add('disabled');
         blacklistSetting.classList.add('disabled');
     } else {
         nsfwSetting.classList.remove('disabled');
@@ -2429,15 +2430,21 @@ function isLocalEnvironment() {
     return window.location.protocol === 'file:';
 }
 
+// В функции buildApiUrl добавить проверку для nekos.moe
 function buildApiUrl(baseUrl, tags) {
     if (domain === 'nekos.moe') {
         let apiUrl = `https://nekos.moe/api/v1/random/image?count=${postsPerPage}`;
+        // Добавляем параметр nsfw для nekos.moe
+        if (filterNsfw) {
+            apiUrl += '&nsfw=false';
+        }
         if (proxyTemplate) {
             apiUrl = proxyTemplate.replace('[URL]', encodeURIComponent(apiUrl));
         }
         return apiUrl;
     }
 
+    // остальной код без изменений...
     let tagsQuery = tags;
     if (filterNsfw && domain !== 'nekos.moe') {
         tagsQuery = tagsQuery ? `${tagsQuery} rating:s` : 'rating:s';
@@ -2457,6 +2464,7 @@ function buildApiUrl(baseUrl, tags) {
     
     return apiUrl;
 }
+
 
 function setLocalStorage(name, value) {
     try {
@@ -3032,11 +3040,15 @@ function selectDomain(selectedDomain) {
         standardInputContainer.classList.add('hidden');
         tinderInputContainer.classList.add('hidden');
         sliderContainer.classList.add('hidden');
+        // Не скрываем настройку NSFW для nekos.moe
     } else {
         standardInputContainer.classList.remove('hidden');
         tinderInputContainer.classList.remove('hidden');
         sliderContainer.classList.remove('hidden');
     }
+    
+    // Обновляем видимость настроек
+    updateSettingsVisibility();
 }
 
 function startStandardMode() {
