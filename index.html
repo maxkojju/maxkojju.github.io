@@ -64,6 +64,108 @@ body {
     position: relative;
     transition: background-color 0.5s ease, color 0.5s ease;
 }
+/* Анимации для плавного перехода */
+.domain-container, .mode-container {
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.domain-buttons, .mode-buttons {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* Скрытие контейнеров */
+.domain-container:not(.active), 
+.mode-container:not(.active) {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.domain-container.active, 
+.mode-container.active {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+}
+/* Анимации для текста и контента */
+.domain-container .container, 
+.mode-container .container {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.domain-container .container:not(.active),
+.mode-container .container:not(.active) {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.domain-container.active .container,
+.mode-container.active .container {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Анимация фоновой картинки */
+.domain-container, .mode-container {
+    background-size: auto 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.8s ease-in-out;
+}
+
+/* Анимация заголовков */
+.domain-container h1, .mode-container h1,
+.domain-container p, .mode-container p {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.domain-container:not(.active) h1,
+.domain-container:not(.active) p,
+.mode-container:not(.active) h1,
+.mode-container:not(.active) p {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.domain-container.active h1,
+.domain-container.active p,
+.mode-container.active h1,
+.mode-container.active p {
+    opacity: 1;
+    transform: translateY(0);
+}
+.tiktok-post h3 {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.tiktok-post p {
+    font-size: 16px;
+    opacity: 0.8;
+}
+/* Анимация фона */
+.domain-container, .mode-container {
+    background-size: auto 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.8s ease-in-out;
+}
+
+/* Анимация кнопок */
+.buttons-transition {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.buttons-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 body.theme-standard {
     background-color: #1a252f;
     color: #d3d7e0;
@@ -1402,9 +1504,11 @@ body.drag-over {
 .domain-container h1, .mode-container h1, .standard-container h1, .tinder-container h1 {
     margin: 0;
 }
+
 .nav-buttons.hidden {
     display: none !important;
 }
+
 .nav-buttons {
     position: fixed;
     top: 10px;
@@ -1904,7 +2008,146 @@ button:hover {
     height: auto;
     border-radius: 5px;
 }
+/* Добавляем стили для TikTok Mode */
+.tiktok-container {
+    width: 100%;
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 20px;
+}
+/* Обновляем стили для TikTok Mode */
+.tiktok-container {
+    width: 100%;
+    height: 100vh;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
 
+.tiktok-container.active {
+    display: flex;
+}
+
+.tiktok-post-container {
+    width: 100%;
+    height: 100vh;
+    overflow-y: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    touch-action: pan-y; /* Разрешаем вертикальные жесты */
+}
+
+.tiktok-post {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Улучшаем отзывчивость изображений на touch */
+.tiktok-post img {
+    max-width: 95vw;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tiktok-buttons {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 100;
+}
+
+.tiktok-buttons button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 25px;
+    min-width: 120px;
+    backdrop-filter: blur(10px);
+    background-color: rgba(42, 107, 155, 0.8);
+}
+
+.tiktok-buttons button:hover {
+    background-color: rgba(30, 78, 117, 0.9);
+}
+
+/* Индикатор загрузки */
+.tiktok-loading {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    z-index: 100;
+    display: none;
+}
+
+/* Скрываем scrollbar */
+.tiktok-post-container::-webkit-scrollbar {
+    display: none;
+}
+
+.tiktok-post-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .tiktok-buttons {
+        right: 10px;
+        bottom: 20px;
+        top: auto;
+        transform: none;
+        flex-direction: row;
+    }
+    
+    .tiktok-buttons button {
+        min-width: 100px;
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .tiktok-post img {
+        max-width: 98vw;
+        max-height: 98vh;
+    }
+     button {
+        min-height: 44px; /* Минимальный размер для touch */
+    }
+}
+#swipeIndicator {
+    transition: opacity 1s ease;
+}
 .remove-pic {
     position: absolute;
     top: 5px;
@@ -1924,8 +2167,6 @@ button:hover {
     display: flex;
     gap: 10px;
     z-index: 1000;
-    /* Добавляем начальное состояние - скрыты */
-    display: none;
 }
 
 .nav-buttons:not(.hidden) {
@@ -1975,10 +2216,33 @@ button:hover {
             <div class="mode-buttons">
                 <button class="mode-button" onclick="startStandardMode()">Standard Mode</button>
                 <button class="mode-button" onclick="startTinderMode()">Tinder Mode</button>
+                <button class="mode-button" onclick="startTikTokMode()">TikTok Mode</button>
             </div>
         </div>
     </div>
-
+  <!-- Добавляем новый контейнер для TikTok Mode после существующих контейнеров -->
+<!-- Добавьте этот элемент в tiktok-container -->
+<div class="tiktok-container" id="tiktokContainer">
+    <div class="container">
+        <h1>  </h1>
+        <p class="warning" id="tiktokErrorWarning"></p>
+        <div class="input-container">
+            <input type="text" class="tag-input" id="tiktokTagInput" placeholder="Enter tags (e.g., cat, blue_eyes)">
+            <button onclick="startTikTokViewing()">Search</button>
+        </div>
+        <div class="tiktok-post-container" id="tiktokPostContainer">
+            <!-- По умолчанию показываем приветственное сообщение -->
+            <div class="tiktok-post" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d3d7e0;">
+                <h3>Welcome to TikTok Mode!</h3>
+                <p>Enter tags and click "Search" to start browsing (beta)</p>
+            </div>
+        </div>
+        <div class="tiktok-buttons" id="tiktokButtons" style="display: none;">
+            <button onclick="saveTikTokImage()">Save</button>
+            <button onclick="openTikTokSource()">Open Source</button>
+        </div>
+    </div>
+</div>
     <div class="standard-container" id="standardContainer">
         <div class="container">
             <h1></h1>
@@ -2117,6 +2381,13 @@ let proxyTemplate = '';
 let delayBeforeNextImage = 3000;
 let blacklistTags = '-shota -scat -gore';
 let importDataCache = null;
+let tiktokPosts = [];
+let currentTikTokIndex = 0;
+let currentTagsTikTok = '';
+let isTikTokLoading = false;
+let tiktokScrollEnabled = false; // По умолчанию отключаем скролл до поиска
+let tiktokInitialized = false; // Флаг инициализации
+
 
 function clearCookies() {
     try {
@@ -2906,7 +3177,10 @@ async function handleImageClick(index) {
 
     setTimeout(async () => {
         const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
-        const apiUrl = buildApiUrl(domain, currentTagsStandard);
+        
+        // Получаем количество постов для замены (все кроме выбранного)
+        const postsToFetch = postsPerPage - 1;
+        const apiUrl = buildApiUrl(currentTagsStandard, postsToFetch);
 
         try {
             const response = await fetch(apiUrl, {
@@ -2919,6 +3193,7 @@ async function handleImageClick(index) {
             }
             const data = await response.json();
             let newPosts = [];
+            
             if (domain === 'nekos.moe') {
                 newPosts = data.images && data.images.length > 0 ? data.images.map(img => ({
                     id: img.id,
@@ -2927,23 +3202,105 @@ async function handleImageClick(index) {
                     score: { total: img.favourites || 0 },
                     fav_count: img.favourites || 0
                 })) : [];
+            } else if (domain === 'waifu.im') {
+                newPosts = data.images ? data.images.slice(0, postsToFetch).map(img => ({
+                    id: img.signature,
+                    file: { url: img.url },
+                    tags: img.tags,
+                    score: { total: 0 },
+                    fav_count: 0
+                })) : [];
             } else {
                 newPosts = data.posts || [];
             }
+
+            // Сохраняем выбранный пост
             const selectedPost = postsData[index];
-            let newPostsIndex = 0;
+            
+            // Заменяем все посты кроме выбранного на новые
             postsData = postsData.map((post, i) => {
                 if (i === index) {
-                    return selectedPost;
+                    return selectedPost; // Оставляем выбранный пост без изменений
+                } else {
+                    // Берем следующий пост из новых данных
+                    const newPost = newPosts.shift();
+                    return newPost || post; // Если новые посты закончились, оставляем старый
                 }
-                return newPosts[newPostsIndex++] || post;
             });
-            displayPosts(postsData);
+            
+            // Если новых постов недостаточно, добавляем дополнительные запросы
+            if (newPosts.length < postsToFetch) {
+                console.log('Not enough new posts, making additional request...');
+                await fetchAdditionalPosts(postsToFetch - newPosts.length, index);
+            } else {
+                displayPosts(postsData);
+            }
+            
         } catch (error) {
             console.error('Error fetching new posts:', error);
             document.getElementById('standardErrorWarning').textContent = 'Error loading new posts. Please try again.';
         }
     }, delayBeforeNextImage);
+}
+
+// Дополнительная функция для получения недостающих постов
+async function fetchAdditionalPosts(count, excludeIndex) {
+    try {
+        const userAgent = 'MyRandomPostFetcher/1.0 (by anonymous user)';
+        const apiUrl = buildApiUrl(currentTagsStandard, count);
+        
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        let additionalPosts = [];
+        
+        if (domain === 'nekos.moe') {
+            additionalPosts = data.images && data.images.length > 0 ? data.images.map(img => ({
+                id: img.id,
+                url: `https://nekos.moe/image/${img.id}.jpg`,
+                tags: img.tags || {},
+                score: { total: img.favourites || 0 },
+                fav_count: img.favourites || 0
+            })) : [];
+        } else if (domain === 'waifu.im') {
+            additionalPosts = data.images ? data.images.slice(0, count).map(img => ({
+                id: img.signature,
+                file: { url: img.url },
+                tags: img.tags,
+                score: { total: 0 },
+                fav_count: 0
+            })) : [];
+        } else {
+            additionalPosts = data.posts || [];
+        }
+        
+        // Заменяем оставшиеся посты
+        let replaceIndex = 0;
+        postsData = postsData.map((post, i) => {
+            if (i === excludeIndex) {
+                return post; // Пропускаем выбранный пост
+            }
+            if (replaceIndex < additionalPosts.length) {
+                return additionalPosts[replaceIndex++];
+            }
+            return post;
+        });
+        
+        displayPosts(postsData);
+        
+    } catch (error) {
+        console.error('Error fetching additional posts:', error);
+        // Все равно показываем то, что получилось
+        displayPosts(postsData);
+    }
 }
 
 async function fetchRandomImage() {
@@ -3078,11 +3435,43 @@ function hideFixLink() {
         fixLink.classList.add('hidden');
     }
 }
-
 function selectDomain(selectedDomain) {
     domain = selectedDomain;
-    document.getElementById('domainContainer').classList.remove('active');
-    document.getElementById('modeContainer').classList.add('active');
+    
+    const domainContainer = document.getElementById('domainContainer');
+    const modeContainer = document.getElementById('modeContainer');
+    const domainContent = domainContainer.querySelector('.container');
+    const modeContent = modeContainer.querySelector('.container');
+    const domainButtons = document.querySelector('.domain-buttons');
+    const modeButtons = document.querySelector('.mode-buttons');
+    
+    // Скрываем весь контент домена с анимацией
+    domainContent.style.opacity = '0';
+    domainContent.style.transform = 'translateY(-20px)';
+    domainButtons.classList.add('buttons-transition');
+    
+    setTimeout(() => {
+        // Скрываем контейнер доменов
+        domainContainer.classList.remove('active');
+        
+        // Показываем контейнер режимов
+        modeContainer.classList.add('active');
+        
+        // Скрываем весь контент режимов перед показом
+        modeContent.style.opacity = '0';
+        modeContent.style.transform = 'translateY(20px)';
+        modeButtons.classList.add('buttons-transition');
+        
+        // Небольшая задержка для смены фона
+        setTimeout(() => {
+            // Показываем контент режимов с анимацией
+            modeContent.style.opacity = '1';
+            modeContent.style.transform = 'translateY(0)';
+            modeButtons.classList.remove('buttons-transition');
+            modeButtons.classList.add('buttons-visible');
+        }, 200);
+        
+    }, 400);
     
     // Hide tag inputs and settings for nekos.moe only
     const standardTagInput = document.getElementById('standardTagInput');
@@ -3103,16 +3492,6 @@ function selectDomain(selectedDomain) {
     
     // Обновляем видимость настроек
     updateSettingsVisibility();
-}
-function startStandardMode() {
-    document.getElementById('modeContainer').classList.remove('active');
-    document.getElementById('standardContainer').classList.add('active');
-    hideFixLink();
-    document.querySelector('.nav-buttons').classList.remove('hidden');
-    document.getElementById('footerLink').style.display = 'block';
-    if (domain === 'nekos.moe') {
-        fetchRandomPosts(true);
-    }
 }
 
 function startTinderMode() {
@@ -3190,7 +3569,477 @@ function setupDragAndDrop() {
         unhighlight();
     }
 }
+function startStandardMode() {
+    const modeContainer = document.getElementById('modeContainer');
+    const standardContainer = document.getElementById('standardContainer');
+    const modeContent = modeContainer.querySelector('.container');
+    const standardContent = standardContainer.querySelector('.container');
+    const modeButtons = document.querySelector('.mode-buttons');
+    
+    // Скрываем весь контент режимов с анимацией
+    modeContent.style.opacity = '0';
+    modeContent.style.transform = 'translateY(-20px)';
+    modeButtons.classList.add('buttons-transition');
+    
+    setTimeout(() => {
+        // Скрываем контейнер режимов
+        modeContainer.classList.remove('active');
+        
+        // Показываем контейнер стандартного режима
+        standardContainer.classList.add('active');
+        
+        // Скрываем весь контент стандартного режима перед показом
+        standardContent.style.opacity = '0';
+        standardContent.style.transform = 'translateY(20px)';
+        
+        // Небольшая задержка для смены контекста
+        setTimeout(() => {
+            // Показываем контент стандартного режима с анимацией
+            standardContent.style.opacity = '1';
+            standardContent.style.transform = 'translateY(0)';
+            
+            // Показываем навигационные кнопки и скрываем фикс-линк
+            hideFixLink();
+            document.querySelector('.nav-buttons').classList.remove('hidden');
+            document.getElementById('footerLink').style.display = 'block';
+            
+            // Загружаем посты для стандартного режима
+            if (domain === 'nekos.moe') {
+                fetchRandomPosts();
+            }
+        }, 200);
+        
+    }, 400);
+}
 
+
+function startTikTokMode() {
+    const modeContainer = document.getElementById('modeContainer');
+    const tiktokContainer = document.getElementById('tiktokContainer');
+    const modeContent = modeContainer.querySelector('.container');
+    const tiktokContent = tiktokContainer.querySelector('.container');
+    const modeButtons = document.querySelector('.mode-buttons');
+    
+    // Анимация скрытия режимов
+    modeContent.style.opacity = '0';
+    modeContent.style.transform = 'translateY(-20px)';
+    modeButtons.classList.add('buttons-transition');
+    
+    setTimeout(() => {
+        modeContainer.classList.remove('active');
+        tiktokContainer.classList.add('active');
+        
+        tiktokContent.style.opacity = '0';
+        tiktokContent.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            tiktokContent.style.opacity = '1';
+            tiktokContent.style.transform = 'translateY(0)';
+            
+            hideFixLink();
+            document.querySelector('.nav-buttons').classList.remove('hidden');
+            document.getElementById('footerLink').style.display = 'block';
+            
+            // Очищаем предыдущие посты, но НЕ загружаем автоматически
+            tiktokPosts = [];
+            currentTikTokIndex = 0;
+            tiktokScrollEnabled = false; // Отключаем скролл до поиска
+            displayTikTokPosts();
+            
+            // Показываем сообщение о необходимости поиска
+            const container = document.getElementById('tiktokPostContainer');
+            if (tiktokPosts.length === 0) {
+                container.innerHTML = `
+                    <div class="tiktok-post" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d3d7e0;">
+                        <h3>Welcome to TikTok Mode!</h3>
+                        <p>Enter tags and click "Search" to start browsing</p>
+                    </div>
+                `;
+            }
+            
+        }, 200);
+    }, 400);
+}
+
+// Новая функция для начала просмотра
+function startTikTokViewing() {
+    tiktokPosts = []; // Очищаем предыдущие посты
+    currentTikTokIndex = 0;
+    tiktokScrollEnabled = true; // Включаем скролл только после поиска
+    fetchTikTokImage();
+}
+
+async function fetchTikTokImage() {
+    if (isTikTokLoading) return;
+    
+    isTikTokLoading = true;
+    showTikTokLoading(true);
+    
+    currentTagsTikTok = domain !== 'nekos.moe' ? document.getElementById('tiktokTagInput').value.trim() : '';
+    const userAgent = 'MyRandomImageViewer/1.0 (by anonymous user)';
+    const apiUrl = buildApiUrl(currentTagsTikTok, 1);
+
+    document.getElementById('tiktokButtons').style.display = 'none';
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': userAgent
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        
+        let newPost;
+        if (domain === 'nekos.moe') {
+            if (data.images && data.images.length > 0) {
+                newPost = {
+                    id: data.images[0].id,
+                    url: `https://nekos.moe/image/${data.images[0].id}.jpg`,
+                    tags: data.images[0].tags || {},
+                    score: { total: data.images[0].favourites || 0 },
+                    fav_count: data.images[0].favourites || 0
+                };
+            } else {
+                throw new Error('No posts returned');
+            }
+        } else if (domain === 'waifu.im') {
+            if (data.images && data.images.length > 0) {
+                newPost = {
+                    id: data.images[0].signature,
+                    url: data.images[0].url,
+                    tags: data.images[0].tags,
+                    score: { total: 0 },
+                    fav_count: 0
+                };
+            } else {
+                throw new Error('No posts returned');
+            }
+        } else {
+            if (data.posts && data.posts.length > 0) {
+                newPost = data.posts[0];
+            } else {
+                throw new Error('No posts returned');
+            }
+        }
+        
+        // Добавляем пост в массив
+        tiktokPosts.push(newPost);
+        currentTikTokIndex = tiktokPosts.length - 1;
+        
+        displayTikTokPosts();
+        document.getElementById('tiktokButtons').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error fetching TikTok image:', error);
+        document.getElementById('tiktokErrorWarning').textContent = 'Error loading image. Retrying...';
+        
+        setTimeout(() => {
+            fetchTikTokImage();
+        }, 1000);
+        return;
+    } finally {
+        isTikTokLoading = false;
+        showTikTokLoading(false);
+    }
+}
+
+function displayTikTokPosts() {
+    const container = document.getElementById('tiktokPostContainer');
+    document.getElementById('tiktokErrorWarning').textContent = '';
+
+    // Очищаем контейнер
+    container.innerHTML = '';
+
+    tiktokPosts.forEach((post, index) => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'tiktok-post';
+        postDiv.dataset.index = index;
+
+        const imageUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+        if (imageUrl) {
+            const img = document.createElement('img');
+            img.onload = function() {
+                // После загрузки изображения разрешаем скролл (если он включен)
+                if (tiktokScrollEnabled) {
+                    tiktokScrollEnabled = true;
+                }
+            };
+            setupImageWithTimeout(img, imageUrl, index, 'tiktok');
+            postDiv.appendChild(img);
+        } else {
+            postDiv.innerHTML = '<p>No valid image found.</p>';
+        }
+
+        container.appendChild(postDiv);
+    });
+
+    // Прокручиваем к последнему посту только если есть посты
+    if (tiktokPosts.length > 0) {
+        const lastPost = container.lastChild;
+        lastPost.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Улучшенный обработчик прокрутки с исправлением множественной загрузки
+// Улучшенный обработчик прокрутки для TikTok Mode
+function setupTikTokScroll() {
+    const container = document.getElementById('tiktokPostContainer');
+    let startY = 0;
+    let startTime = 0;
+    let isScrolling = false;
+    let lastLoadTime = 0;
+    const LOAD_COOLDOWN = 1000; // Задержка между загрузками 1 секунда
+    let touchStarted = false;
+
+    // Touch events для мобильных устройств
+    container.addEventListener('touchstart', (e) => {
+        if (!tiktokScrollEnabled || isTikTokLoading) return;
+        
+        touchStarted = true;
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+        isScrolling = false;
+    });
+
+    container.addEventListener('touchmove', (e) => {
+        if (!touchStarted || !tiktokScrollEnabled) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diff = startY - currentY;
+        
+        // Если свайп вниз достаточно большой, отмечаем как скроллинг
+        if (diff > 50) {
+            isScrolling = true;
+        }
+    });
+
+    container.addEventListener('touchend', (e) => {
+        if (!touchStarted || !tiktokScrollEnabled || isTikTokLoading) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - lastLoadTime < LOAD_COOLDOWN) {
+            touchStarted = false;
+            return;
+        }
+        
+        const endY = e.changedTouches[0].clientY;
+        const diff = startY - endY;
+        const timeDiff = currentTime - startTime;
+        
+        console.log(`Swipe detected: diff=${diff}, time=${timeDiff}, scrolling=${isScrolling}`); // Для отладки
+        
+        // Более чувствительные настройки для свайпа вниз
+        if (diff > 50 && timeDiff < 500 && isScrolling) {
+            lastLoadTime = currentTime;
+            console.log('Loading next post via swipe...');
+            loadNextTikTokPost();
+        }
+        
+        touchStarted = false;
+        isScrolling = false;
+    });
+
+    // Обработчик колеса мыши для ПК
+    container.addEventListener('wheel', (e) => {
+        if (!tiktokScrollEnabled || isTikTokLoading) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - lastLoadTime < LOAD_COOLDOWN) return;
+        
+        e.preventDefault();
+        
+        const delta = e.deltaY;
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        
+        // Проверяем, достигли ли мы конца контейнера
+        if (delta > 0 && scrollTop + clientHeight >= scrollHeight - 5) {
+            lastLoadTime = currentTime;
+            console.log('Loading next post via wheel...');
+            loadNextTikTokPost();
+        }
+    });
+
+    // Дополнительный обработчик для клавиатуры (стрелки, PageDown, Space)
+    document.addEventListener('keydown', (e) => {
+        if (!tiktokScrollEnabled || isTikTokLoading) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - lastLoadTime < LOAD_COOLDOWN) return;
+        
+        // Стрелка вниз, PageDown, Space, End
+        if (['ArrowDown', 'PageDown', ' ', 'End'].includes(e.key)) {
+            e.preventDefault();
+            lastLoadTime = currentTime;
+            console.log('Loading next post via keyboard...');
+            loadNextTikTokPost();
+        }
+    });
+
+    // Предотвращаем стандартное поведение скролла когда отключено
+    container.addEventListener('scroll', (e) => {
+        if (!tiktokScrollEnabled) {
+            // Фиксируем скролл на текущей позиции
+            if (tiktokPosts.length > 0) {
+                const lastPost = container.lastChild;
+                lastPost.scrollIntoView({ behavior: 'auto' });
+            }
+        }
+    });
+
+    // Добавляем визуальный индикатор свайпа
+    addSwipeIndicator();
+}
+
+// Функция для добавления индикатора свайпа
+function addSwipeIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'swipeIndicator';
+    indicator.innerHTML = `
+        <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                   background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; 
+                   border-radius: 20px; font-size: 14px; z-index: 1000; 
+                   display: flex; align-items: center; gap: 10px;">
+            <span>Swipe up for next image</span>
+            <span style="font-size: 18px;">↑</span>
+        </div>
+    `;
+    document.getElementById('tiktokContainer').appendChild(indicator);
+
+    // Скрываем индикатор через 5 секунд
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+        setTimeout(() => indicator.remove(), 1000);
+    }, 5000);
+}
+
+
+function loadNextTikTokPost() {
+    if (!tiktokScrollEnabled || isTikTokLoading) return;
+    
+    console.log('Loading next TikTok post...'); // Для отладки
+    fetchTikTokImage();
+}
+
+function showTikTokLoading(show) {
+    let loadingIndicator = document.getElementById('tiktokLoading');
+    if (!loadingIndicator) {
+        loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'tiktokLoading';
+        loadingIndicator.className = 'tiktok-loading';
+        loadingIndicator.textContent = 'Loading...';
+        document.getElementById('tiktokContainer').appendChild(loadingIndicator);
+    }
+    
+    loadingIndicator.style.display = show ? 'block' : 'none';
+}
+
+function saveTikTokImage() {
+    if (tiktokPosts.length > 0 && currentTikTokIndex >= 0) {
+        const currentPost = tiktokPosts[currentTikTokIndex];
+        if (saveImageToStorage(currentPost)) {
+            console.log('Image saved successfully:', currentPost.id);
+            showTemporaryMessage('Image saved!');
+        } else {
+            console.log('Image not saved (already exists or invalid):', currentPost.id);
+            showTemporaryMessage('Image already saved!');
+        }
+    }
+}
+
+function openTikTokSource() {
+    if (tiktokPosts.length > 0 && currentTikTokIndex >= 0) {
+        const currentPost = tiktokPosts[currentTikTokIndex];
+        const sourceUrl = domain === 'nekos.moe' ? 
+            `https://nekos.moe/post/${currentPost.id}` : 
+            `https://${domain}/posts/${currentPost.id}`;
+        window.open(sourceUrl, '_blank');
+    }
+}
+
+
+// Вспомогательная функция для показа временных сообщений
+function showTemporaryMessage(message) {
+    const msgElement = document.createElement('div');
+    msgElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        font-size: 16px;
+    `;
+    msgElement.textContent = message;
+    document.body.appendChild(msgElement);
+    
+    setTimeout(() => {
+        document.body.removeChild(msgElement);
+    }, 2000);
+}
+
+// Обновляем инициализацию
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+    setupDragAndDrop();
+    setupTikTokScroll();
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const theme = this.dataset.theme;
+            setTheme(theme);
+        });
+    });
+});
+function startTinderMode() {
+    const modeContainer = document.getElementById('modeContainer');
+    const tinderContainer = document.getElementById('tinderContainer');
+    const modeContent = modeContainer.querySelector('.container');
+    const tinderContent = tinderContainer.querySelector('.container');
+    const modeButtons = document.querySelector('.mode-buttons');
+    
+    // Скрываем весь контент режимов с анимацией
+    modeContent.style.opacity = '0';
+    modeContent.style.transform = 'translateY(-20px)';
+    modeButtons.classList.add('buttons-transition');
+    
+    setTimeout(() => {
+        // Скрываем контейнер режимов
+        modeContainer.classList.remove('active');
+        
+        // Показываем контейнер твиндер режима
+        tinderContainer.classList.add('active');
+        
+        // Скрываем весь контент твиндер режима перед показом
+        tinderContent.style.opacity = '0';
+        tinderContent.style.transform = 'translateY(20px)';
+        
+        // Небольшая задержка для смены контекста
+        setTimeout(() => {
+            // Показываем контент твиндер режима с анимацией
+            tinderContent.style.opacity = '1';
+            tinderContent.style.transform = 'translateY(0)';
+            
+            // Показываем навигационные кнопки и скрываем фикс-линк
+            hideFixLink();
+            document.querySelector('.nav-buttons').classList.remove('hidden');
+            document.getElementById('footerLink').style.display = 'block';
+            
+            // Загружаем изображение для твиндер режима
+            if (domain === 'nekos.moe') {
+                fetchRandomImage();
+            }
+        }, 200);
+        
+    }, 400);
+}
 // Функция для обработки dropped файла
 function processDroppedFile(file) {
     const reader = new FileReader();
