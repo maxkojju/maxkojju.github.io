@@ -2009,6 +2009,37 @@ button:hover {
     border-radius: 5px;
 }
 /* Добавляем стили для TikTok Mode */
+.tiktok-post video {
+    max-width: 95vw;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    object-fit: contain;
+    background: #000; /* Черный фон для видео */
+}
+
+/* Индикатор что это видео */
+.tiktok-post video::before {
+    content: '🎬';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    z-index: 2;
+}
+@media (max-width: 768px) {
+    .tiktok-post video {
+        max-width: 98vw;
+        max-height: 98vh;
+    }
+}
+
 .tiktok-container {
     width: 100%;
     min-height: 100vh;
@@ -2234,7 +2265,7 @@ button:hover {
             <!-- По умолчанию показываем приветственное сообщение -->
             <div class="tiktok-post" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d3d7e0;">
                 <h3>Welcome to TikTok Mode!</h3>
-                <p>Enter tags and click "Search" to start browsing (beta)</p>
+                <p>add 'type:webm' to search, to view videos only (beta)</p>
             </div>
         </div>
         <div class="tiktok-buttons" id="tiktokButtons" style="display: none;">
@@ -3142,25 +3173,40 @@ function displayPosts(posts) {
 function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
     const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
     let imageLoaded = false;
+    
+    // Устанавливаем базовые стили
+    imgElement.style.maxWidth = '95vw';
+    imgElement.style.maxHeight = '95vh';
+    imgElement.style.width = 'auto';
+    imgElement.style.height = 'auto';
+    imgElement.style.borderRadius = '10px';
+    imgElement.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+    imgElement.style.objectFit = 'contain';
+    
     const timeoutId = setTimeout(() => {
         if (!imageLoaded) {
             console.log(`Image loading timeout for ${imageUrl}`);
             imgElement.src = placeholderUrl;
             imgElement.alt = 'Image failed to load';
         }
-    }, 100000);
+    }, 15000); // Увеличиваем таймаут до 15 секунд
+
     imgElement.onload = function() {
         imageLoaded = true;
         clearTimeout(timeoutId);
+        console.log('Image loaded successfully');
     };
+    
     imgElement.onerror = function() {
         imageLoaded = true;
         clearTimeout(timeoutId);
+        console.log('Image failed to load:', imageUrl);
         imgElement.src = placeholderUrl;
         imgElement.alt = 'Image not available';
     };
+    
     imgElement.src = imageUrl;
-    imgElement.alt = 'Post image';
+    imgElement.alt = 'Post media';
 }
 
 async function handleImageClick(index) {
@@ -3653,6 +3699,7 @@ function startTikTokMode() {
                     <div class="tiktok-post" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d3d7e0;">
                         <h3>Welcome to TikTok Mode!</h3>
                         <p>Enter tags and click "Search" to start browsing</p>
+                        <p>add 'type:webm' to search, to view videos only (beta)</p>
                     </div>
                 `;
             }
@@ -3746,11 +3793,12 @@ async function fetchTikTokImage() {
     }
 }
 
+
+// Обновляем displayTikTokPosts для поддержки видео
 function displayTikTokPosts() {
     const container = document.getElementById('tiktokPostContainer');
     document.getElementById('tiktokErrorWarning').textContent = '';
 
-    // Очищаем контейнер
     container.innerHTML = '';
 
     tiktokPosts.forEach((post, index) => {
@@ -3758,29 +3806,166 @@ function displayTikTokPosts() {
         postDiv.className = 'tiktok-post';
         postDiv.dataset.index = index;
 
-        const imageUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
-        if (imageUrl) {
-            const img = document.createElement('img');
-            img.onload = function() {
-                // После загрузки изображения разрешаем скролл (если он включен)
-                if (tiktokScrollEnabled) {
-                    tiktokScrollEnabled = true;
-                }
-            };
-            setupImageWithTimeout(img, imageUrl, index, 'tiktok');
-            postDiv.appendChild(img);
+        const mediaType = getMediaType(post);
+        const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+        const finalMediaUrl = buildMediaUrl(mediaUrl);
+
+        if (finalMediaUrl) {
+            if (mediaType === 'video') {
+                createVideoElement(postDiv, finalMediaUrl, mediaUrl);
+            } else if (mediaType === 'gif') {
+                createGifElement(postDiv, finalMediaUrl);
+            } else {
+                createImageElement(postDiv, finalMediaUrl, index);
+            }
         } else {
-            postDiv.innerHTML = '<p>No valid image found.</p>';
+            postDiv.innerHTML = '<p>No valid media found.</p>';
         }
 
         container.appendChild(postDiv);
     });
 
-    // Прокручиваем к последнему посту только если есть посты
     if (tiktokPosts.length > 0) {
         const lastPost = container.lastChild;
         lastPost.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+// Создание видео элемента
+function createVideoElement(container, videoUrl, originalUrl) {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.style.maxWidth = '95vw';
+    video.style.maxHeight = '95vh';
+    video.style.width = 'auto';
+    video.style.height = 'auto';
+    video.style.borderRadius = '10px';
+    video.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+    video.style.objectFit = 'contain';
+    video.style.background = '#000';
+
+    const source = document.createElement('source');
+    source.src = videoUrl;
+    
+    // Определяем тип видео по расширению оригинального URL (без прокси)
+    const ext = originalUrl.toLowerCase().split('.').pop();
+    if (ext === 'webm') {
+        source.type = 'video/webm';
+    } else if (ext === 'mp4') {
+        source.type = 'video/mp4';
+    } else {
+        source.type = 'video/mp4'; // fallback
+    }
+    
+    video.appendChild(source);
+
+    // Добавляем обработчики событий для отладки
+    video.addEventListener('loadeddata', function() {
+        console.log('Video loaded successfully:', videoUrl);
+    });
+
+    video.addEventListener('error', function(e) {
+        console.error('Video loading error:', e);
+        console.log('Video URL:', videoUrl);
+        console.log('Video source type:', source.type);
+        
+        // Пробуем загрузить напрямую без прокси, если использовался прокси
+        if (proxyTemplate && videoUrl.includes(proxyTemplate.split('[URL]')[0])) {
+            console.log('Trying direct URL without proxy...');
+            source.src = originalUrl;
+            video.load();
+        } else {
+            // Если все равно ошибка, показываем плейсхолдер
+            video.style.display = 'none';
+            const fallbackImg = document.createElement('img');
+            fallbackImg.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+            fallbackImg.alt = 'Video not available';
+            fallbackImg.style.maxWidth = '95vw';
+            fallbackImg.style.maxHeight = '95vh';
+            container.appendChild(fallbackImg);
+        }
+    });
+
+    // Добавляем индикатор что это видео
+    const videoIndicator = document.createElement('div');
+    videoIndicator.textContent = '🎬 VIDEO';
+    videoIndicator.style.position = 'absolute';
+    videoIndicator.style.top = '10px';
+    videoIndicator.style.left = '10px';
+    videoIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
+    videoIndicator.style.color = 'white';
+    videoIndicator.style.padding = '5px 10px';
+    videoIndicator.style.borderRadius = '15px';
+    videoIndicator.style.fontSize = '12px';
+    videoIndicator.style.zIndex = '2';
+    
+    container.appendChild(video);
+    container.appendChild(videoIndicator);
+}
+
+// Создание GIF элемента
+function createGifElement(container, gifUrl) {
+    const img = document.createElement('img');
+    img.src = gifUrl;
+    img.alt = 'GIF';
+    img.style.maxWidth = '95vw';
+    img.style.maxHeight = '95vh';
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    img.style.borderRadius = '10px';
+    img.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+    img.style.objectFit = 'contain';
+    
+    img.onload = function() {
+        console.log('GIF loaded successfully');
+    };
+    
+    img.onerror = function() {
+        console.log('GIF failed to load');
+        img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+    };
+    
+    container.appendChild(img);
+}
+
+// Создание изображения
+function createImageElement(container, imageUrl, index) {
+    const img = document.createElement('img');
+    setupImageWithTimeout(img, imageUrl, index, 'tiktok');
+    container.appendChild(img);
+}
+function getMediaType(post) {
+    // Для e621/e926
+    if (post.file && post.file.url) {
+        const url = post.file.url.toLowerCase();
+        const ext = url.split('.').pop();
+        if (['webm', 'mp4', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
+        if (ext === 'gif') return 'gif';
+        return 'image';
+    }
+    
+    // Для nekos.moe и waifu.im
+    if (post.url) {
+        const url = post.url.toLowerCase();
+        const ext = url.split('.').pop();
+        if (['webm', 'mp4', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
+        if (ext === 'gif') return 'gif';
+        return 'image';
+    }
+    
+    return 'image';
+}
+
+// Функция для построения URL с учетом прокси
+function buildMediaUrl(url) {
+    if (proxyTemplate && url) {
+        return proxyTemplate.replace('[URL]', encodeURIComponent(url));
+    }
+    return url;
 }
 
 // Улучшенный обработчик прокрутки с исправлением множественной загрузки
@@ -3941,16 +4126,18 @@ function showTikTokLoading(show) {
 function saveTikTokImage() {
     if (tiktokPosts.length > 0 && currentTikTokIndex >= 0) {
         const currentPost = tiktokPosts[currentTikTokIndex];
+        const mediaType = getMediaType(currentPost);
+        
         if (saveImageToStorage(currentPost)) {
-            console.log('Image saved successfully:', currentPost.id);
-            showTemporaryMessage('Image saved!');
+            console.log('Media saved successfully:', currentPost.id);
+            const message = mediaType === 'video' ? 'Video saved!' : 'Image saved!';
+            showTemporaryMessage(message);
         } else {
-            console.log('Image not saved (already exists or invalid):', currentPost.id);
-            showTemporaryMessage('Image already saved!');
+            console.log('Media not saved (already exists or invalid):', currentPost.id);
+            showTemporaryMessage('Media already saved!');
         }
     }
 }
-
 function openTikTokSource() {
     if (tiktokPosts.length > 0 && currentTikTokIndex >= 0) {
         const currentPost = tiktokPosts[currentTikTokIndex];
