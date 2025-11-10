@@ -2351,6 +2351,14 @@ button:hover {
                     <input type="checkbox" id="autoOpenSavedToggle"> Auto open saved post (Tinder Mode)
                 </label>
             </div>
+<div class="setting-item">
+    <label for="videoFilter">Video content:</label>
+    <select id="videoFilter" style="width: 100%; margin-top: 5px; padding: 8px; background-color: #1a252f; color: #d3d7e0; border: 1px solid #3b4a5a; border-radius: 3px;">
+        <option value="block">Block videos</option>
+        <option value="allow">Allow videos</option>
+        <option value="only">Only videos</option>
+    </select>
+</div>
             <div class="setting-item">
                 <label for="delayInput">Delay before next image (ms):</label>
                 <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
@@ -2443,6 +2451,8 @@ function loadSettings() {
     autoOpenSaved = getLocalStorage('autoOpenSaved') !== false;
     blacklistTags = getLocalStorage('blacklistTags') || '-shota -scat -gore';
     const savedTheme = getLocalStorage('theme') || 'standard';
+    const videoFilter = getLocalStorage('videoFilter') || 'allow';
+document.getElementById('videoFilter').value = videoFilter;
     
     // Загрузка URL маскотов
     const mascotDomainUrl = getLocalStorage('mascotDomainUrl') || 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760458897.png';
@@ -2494,7 +2504,8 @@ function saveSettings() {
     proxyTemplate = document.getElementById('proxyInput').value.trim();
     delayBeforeNextImage = parseInt(document.getElementById('delayInput').value) || 3000;
     blacklistTags = document.getElementById('blacklistInput').value.trim() || '-shota -scat -gore';
-    
+    const videoFilter = document.getElementById('videoFilter').value;
+setLocalStorage('videoFilter', videoFilter);
     // Сохранение URL маскотов
     const mascotDomainUrl = document.getElementById('mascotDomainInput').value.trim();
     const mascotModeUrl = document.getElementById('mascotModeInput').value.trim();
@@ -2732,10 +2743,18 @@ function isLocalEnvironment() {
     return window.location.protocol === 'file:';
 }
 
-// В функции buildApiUrl добавить проверку для nekos.moe
 function buildApiUrl(tags, limit) {
     let apiUrl;
     let tagsQuery = tags ? tags.trim() : '';
+
+    // Добавляем фильтр видео
+    const videoFilter = getLocalStorage('videoFilter') || 'allow';
+    if (videoFilter === 'block') {
+        tagsQuery = tagsQuery ? `${tagsQuery} -type:webm` : '-type:webm';
+    } else if (videoFilter === 'only') {
+        tagsQuery = tagsQuery ? `${tagsQuery} type:webm` : 'type:webm';
+    }
+    // Для 'allow' ничего не добавляем
 
     if (domain === 'e621.net' || domain === 'e926.net') {
         if (filterNsfw) {
@@ -2790,7 +2809,6 @@ function buildApiUrl(tags, limit) {
     }
     return apiUrl;
 }
-
 
 function setLocalStorage(name, value) {
     try {
@@ -2865,59 +2883,282 @@ function openSettings() {
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
+// ======== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ========
+const MAX_CONCURRENT = 15;
+const RATE_LIMIT_PER_SECOND = 5;
+const DELAY_BETWEEN_STARTS = 2000 / RATE_LIMIT_PER_SECOND;
+const RETRY_INTERVAL = 1500;
+const MAX_RETRIES = 15;
+const PLACEHOLDER_URL = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
 
+let loadingQueue = [];
+let activeLoads = 0;
+let totalQueued = 0;
+let processedCount = 0;
+
+// ======== ПОВТОРНЫЕ ПОПЫТКИ ========
+function startImageLoadWithRetry(img, src, retries = 0) {
+    return new Promise((resolve) => {
+        let settled = false;
+
+        const cleanup = () => {
+            if (settled) return;
+            settled = true;
+            activeLoads--;
+            processedCount++;
+            updateProgress();
+            resolve();
+        };
+
+        const tryLoad = () => {
+            if (settled) return;
+            // Cache-buster + принудительный рефетч
+            const url = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+            img.src = url;
+
+            img.onload = () => {
+                if (settled) return;
+                console.log('Loaded:', src);
+                cleanup();
+            };
+
+            img.onerror = () => {
+                if (settled) return;
+                img.src = PLACEHOLDER_URL; // временный плейсхолдер
+
+                if (retries < MAX_RETRIES) {
+                    console.log(`Retry ${retries + 1}/${MAX_RETRIES}:`, src);
+                    setTimeout(tryLoad, RETRY_INTERVAL);
+                } else {
+                    console.log('All retries failed:', src);
+                    img.src = PLACEHOLDER_URL;
+                    cleanup();
+                }
+            };
+        };
+
+        tryLoad();
+    });
+}
+
+// ======== БЕСКОНЕЧНАЯ ОБРАБОТКА ОЧЕРЕДИ ========
+async function processLoadingQueue() {
+    if (loadingQueue.length === 0) return;
+
+    while (loadingQueue.length > 0) {
+        // Ждём свободный слот
+        while (activeLoads >= MAX_CONCURRENT) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+
+        const { img, src } = loadingQueue.shift();
+        activeLoads++;
+
+        // Запускаем с повторами
+        startImageLoadWithRetry(img, src).finally(() => {
+            activeLoads--;
+            // Сразу запускаем следующий, если есть
+            if (loadingQueue.length > 0) {
+                processLoadingQueue();
+            }
+        });
+
+        // Rate limit
+        await new Promise(r => setTimeout(r, DELAY_BETWEEN_STARTS));
+    }
+}
+
+// ======== ПРОГРЕСС-БАР ========
+function updateProgress() {
+    const progress = document.getElementById('savedPicsProgress');
+    if (!progress) return;
+
+    const percent = totalQueued > 0 ? Math.round((processedCount / totalQueued) * 100) : 100;
+    progress.style.width = percent + '%';
+    progress.textContent = `${processedCount}/${totalQueued}`;
+}
+
+// ======== ОСНОВНАЯ ФУНКЦИЯ ========
 function displaySavedPics() {
     const container = document.getElementById('savedPicsContainer');
     container.innerHTML = '';
+
     let savedPics = getLocalStorage('savedPics') || [];
-
-    // Реверс массива, чтобы новые сохранения были в начале
-    savedPics = savedPics.reverse();
-
     if (savedPics.length === 0) {
         container.innerHTML = '<p>No saved pictures yet.</p>';
         return;
     }
 
-    savedPics.forEach((pic, index) => {
+    // Сброс
+    loadingQueue = [];
+    activeLoads = 0;
+    totalQueued = 0;
+    processedCount = 0;
+
+    // Прогресс-бар
+    const progressContainer = document.createElement('div');
+    progressContainer.style.margin = '15px 0';
+    progressContainer.style.background = '#2a3b4a';
+    progressContainer.style.borderRadius = '8px';
+    progressContainer.style.overflow = 'hidden';
+    progressContainer.style.height = '30px';
+    progressContainer.style.position = 'relative';
+    progressContainer.innerHTML = `
+        <div id="savedPicsProgress" style="
+            width: 0%; height: 100%; background: #2a6b9b; 
+            transition: width 0.4s ease; text-align: center;
+            line-height: 30px; color: white; font-weight: bold;
+        ">0/${savedPics.length}</div>
+    `;
+    container.appendChild(progressContainer);
+
+    savedPics.forEach((pic) => {
+        const picDiv = document.createElement('div');
+        picDiv.className = 'saved-pic';
+
+        const img = document.createElement('img');
+        img.src = PLACEHOLDER_URL;
+        img.alt = 'Saved image';
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.borderRadius = '5px';
+        img.style.cursor = 'pointer';
+        img.loading = 'lazy';
+
+        img.addEventListener('click', () => {
+            window.open(
+                pic.domain === 'nekos.moe'
+                    ? `https://nekos.moe/post/${pic.id}`
+                    : `https://${pic.domain}/posts/${pic.id}`,
+                '_blank'
+            );
+        });
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.className = 'remove-button';
+        removeButton.onclick = () => removeSavedPic(pic.id);
+
+        const infoDiv = document.createElement('div');
+        infoDiv.style.background = 'rgba(0,0,0,0.7)';
+        infoDiv.style.color = '#d3d7e0';
+        infoDiv.style.padding = '5px';
+        infoDiv.style.fontSize = '12px';
+        infoDiv.style.borderRadius = '3px';
+        infoDiv.style.marginTop = '5px';
+        infoDiv.innerHTML = `ID: ${pic.id}`;
+
+        picDiv.appendChild(img);
+        picDiv.appendChild(infoDiv);
+        picDiv.appendChild(removeButton);
+        container.appendChild(picDiv);
+
+        const realUrl = pic.url || pic.file?.url || '';
+        if (realUrl) {
+            loadingQueue.push({ img, src: realUrl });
+            totalQueued++;
+        } else {
+            img.src = PLACEHOLDER_URL;
+            processedCount++;
+        }
+    });
+
+    updateProgress();
+    processLoadingQueue(); // ← один вызов — и всё работает до конца!
+}
+function previewImportFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.bestofe,application/json';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importData = JSON.parse(e.target.result);
+                const importedPics = importData.savedPics || [];
+                
+                if (importedPics.length === 0) {
+                    alert('No valid saved pictures found in the file.');
+                    return;
+                }
+                
+                // Показываем предпросмотр вместо импорта
+                displayPreviewPics(importedPics, file.name);
+            } catch (error) {
+                console.error('Error parsing import file:', error);
+                alert('Error reading import file. Please make sure it is a valid .bestofe file.');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+
+// Функция для отображения предпросмотра
+function displayPreviewPics(pics, fileName) {
+    const container = document.getElementById('savedPicsContainer');
+    container.innerHTML = '';
+    
+    // Добавляем заголовок предпросмотра
+    const previewHeader = document.createElement('div');
+    previewHeader.style.gridColumn = '1 / -1';
+    previewHeader.style.textAlign = 'center';
+    previewHeader.style.marginBottom = '15px';
+    previewHeader.style.padding = '10px';
+    previewHeader.style.backgroundColor = '#3b4a5a';
+    previewHeader.style.borderRadius = '5px';
+    previewHeader.style.border = '2px solid #2a6b9b';
+    previewHeader.innerHTML = `
+        <h3 style="margin: 0 0 10px 0; color: #2a6b9b;">Preview: ${fileName}</h3>
+        <p style="margin: 0 0 15px 0;">Showing ${pics.length} pictures from import file</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="nav-button" onclick="displaySavedPics()">Back to My Saved Pics</button>
+            <button class="nav-button" onclick="importPreviewedPics()" style="background-color: #2a9b2a;">Import All Pictures</button>
+        </div>
+    `;
+    container.appendChild(previewHeader);
+
+    if (pics.length === 0) {
+        container.innerHTML = '<p>No pictures found in the file.</p>';
+        return;
+    }
+
+    pics.forEach((pic, index) => {
         const picDiv = document.createElement('div');
         picDiv.className = 'saved-pic';
 
         const img = document.createElement('img');
         img.src = pic.url;
-        img.alt = 'Saved image';
+        img.alt = 'Preview image';
         img.style.width = '100%';
         img.style.height = 'auto';
         img.style.borderRadius = '5px';
         img.style.cursor = 'pointer';
 
         img.onerror = function() {
-            console.log('Failed to load saved image:', pic.url);
+            console.log('Failed to load preview image:', pic.url);
             img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
         };
 
-        img.addEventListener('click', () => {
-            let viewUrl;
-            if (pic.domain === 'waifu.im') {
-                viewUrl = pic.url;
-            } else if (pic.domain === 'nekos.moe') {
-                viewUrl = `https://nekos.moe/post/${pic.id}`;
-            } else {
-                viewUrl = `https://${pic.domain}/posts/${pic.id}`;
-            }
-            window.open(viewUrl, '_blank');
-        });
+        img.addEventListener('click', () => window.open(pic.domain === 'nekos.moe' ? `https://nekos.moe/post/${pic.id}` : `https://${pic.domain}/posts/${pic.id}`, '_blank'));
 
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-pic';
-        removeBtn.textContent = 'X';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            removeSavedPic(pic.id);
-        };
+        const infoDiv = document.createElement('div');
+        infoDiv.style.background = 'rgba(0, 0, 0, 0.7)';
+        infoDiv.style.color = '#d3d7e0';
+        infoDiv.style.padding = '5px';
+        infoDiv.style.fontSize = '12px';
+        infoDiv.style.borderRadius = '3px';
+        infoDiv.style.marginTop = '5px';
+        infoDiv.innerHTML = `ID: ${pic.id}`;
 
         picDiv.appendChild(img);
-        picDiv.appendChild(removeBtn);
+        picDiv.appendChild(infoDiv);
         container.appendChild(picDiv);
     });
 }
