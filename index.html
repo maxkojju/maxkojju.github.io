@@ -2008,17 +2008,6 @@ button:hover {
     height: auto;
     border-radius: 5px;
 }
-/* Добавляем стили для TikTok Mode */
-.tiktok-post video {
-    max-width: 95vw;
-    max-height: 95vh;
-    width: auto;
-    height: auto;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    object-fit: contain;
-    background: #000; /* Черный фон для видео */
-}
 
 /* Индикатор что это видео */
 .tiktok-post video::before {
@@ -2040,16 +2029,6 @@ button:hover {
     }
 }
 
-.tiktok-container {
-    width: 100%;
-    min-height: 100vh;
-    display: none;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    padding-top: 20px;
-}
-/* Обновляем стили для TikTok Mode */
 .tiktok-container {
     width: 100%;
     height: 100vh;
@@ -2075,7 +2054,7 @@ button:hover {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     position: relative;
-    touch-action: pan-y; /* Разрешаем вертикальные жесты */
+    touch-action: pan-y;
 }
 
 .tiktok-post {
@@ -2090,8 +2069,8 @@ button:hover {
     flex-shrink: 0;
 }
 
-/* Улучшаем отзывчивость изображений на touch */
-.tiktok-post img {
+.tiktok-post img,
+.tiktok-post video {
     max-width: 95vw;
     max-height: 95vh;
     width: auto;
@@ -2104,28 +2083,45 @@ button:hover {
     -webkit-tap-highlight-color: transparent;
 }
 
+
+/* Обновленные стили для кнопок TikTok */
 .tiktok-buttons {
-    position: fixed;
-    right: 20px;
+    position: absolute;
+    right: calc(50% - 47.5vw + 20px); /* Позиционируем относительно края изображения */
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
     z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px 12px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+
 
 .tiktok-buttons button {
-    padding: 12px 20px;
-    font-size: 16px;
-    border-radius: 25px;
-    min-width: 120px;
+    padding: 15px;
+    font-size: 20px;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     backdrop-filter: blur(10px);
-    background-color: rgba(42, 107, 155, 0.8);
+    background-color: rgba(42, 107, 155, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
-
 .tiktok-buttons button:hover {
-    background-color: rgba(30, 78, 117, 0.9);
+    background-color: rgba(30, 78, 117, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Индикатор загрузки */
@@ -2158,24 +2154,28 @@ button:hover {
         right: 10px;
         bottom: 20px;
         top: auto;
+        left: auto;
         transform: none;
         flex-direction: row;
+        padding: 10px;
+        gap: 10px;
+        border-radius: 20px;
     }
     
     .tiktok-buttons button {
         min-width: 100px;
         padding: 10px 15px;
         font-size: 14px;
+        border-radius: 20px;
     }
     
-    .tiktok-post img {
+    .tiktok-post img,
+    .tiktok-post video {
         max-width: 98vw;
-        max-height: 98vh;
-    }
-     button {
-        min-height: 44px; /* Минимальный размер для touch */
+        max-height: 85vh; /* Уменьшаем высоту чтобы кнопки не перекрывались */
     }
 }
+
 #swipeIndicator {
     transition: opacity 1s ease;
 }
@@ -2253,6 +2253,7 @@ button:hover {
     </div>
   <!-- Добавляем новый контейнер для TikTok Mode после существующих контейнеров -->
 <!-- Добавьте этот элемент в tiktok-container -->
+<!-- Обновленный контейнер для TikTok Mode -->
 <div class="tiktok-container" id="tiktokContainer">
     <div class="container">
         <h1>  </h1>
@@ -2269,8 +2270,8 @@ button:hover {
             </div>
         </div>
         <div class="tiktok-buttons" id="tiktokButtons" style="display: none;">
-            <button onclick="saveTikTokImage()">Save</button>
-            <button onclick="openTikTokSource()">Open Source</button>
+            <button onclick="saveTikTokImage()" title="Save">❤️</button>
+            <button onclick="openTikTokSource()" title="Open Source">🔗</button>
         </div>
     </div>
 </div>
@@ -3151,37 +3152,179 @@ function displayPosts(posts) {
             const postDiv = document.createElement('div');
             postDiv.className = 'post';
             postDiv.dataset.index = index;
-            const img = document.createElement('img');
-            const imageUrl = domain === 'nekos.moe' ? post.url : post.file.url;
-            setupImageWithTimeout(img, imageUrl, index, 'standard');
+            
+            const mediaType = getMediaType(post);
+            const mediaUrl = domain === 'nekos.moe' ? post.url : post.file.url;
+            const finalMediaUrl = buildMediaUrl(mediaUrl);
+
+            if (finalMediaUrl) {
+                if (mediaType === 'video') {
+                    createVideoElementForStandard(postDiv, finalMediaUrl, mediaUrl);
+                } else if (mediaType === 'gif') {
+                    createGifElementForStandard(postDiv, finalMediaUrl);
+                } else {
+                    createImageElementForStandard(postDiv, finalMediaUrl, index);
+                }
+            } else {
+                postDiv.innerHTML = '<p>No valid media found.</p>';
+            }
+
             const viewsDiv = document.createElement('div');
             viewsDiv.className = 'views';
             const ratio = post.fav_count > 0 ? (post.score.total / post.fav_count).toFixed(2) : 'N/A';
             viewsDiv.textContent = `cool ratio: ${ratio}`;
+            
             const viewButton = document.createElement('div');
             viewButton.textContent = 'View on site';
             viewButton.onclick = () => window.open(domain === 'nekos.moe' ? `https://nekos.moe/post/${post.id}` : `https://${domain}/posts/${post.id}`, '_blank');
-            postDiv.appendChild(img);
+            
             postDiv.appendChild(viewsDiv);
             postDiv.appendChild(viewButton);
-            img.addEventListener('click', () => handleImageClick(index));
             container.appendChild(postDiv);
         }
     });
+}
+
+// Новые функции для создания медиа-элементов в Standard Mode
+function createVideoElementForStandard(container, videoUrl, originalUrl) {
+    const videoWrapper = document.createElement('div');
+    videoWrapper.style.position = 'relative';
+    videoWrapper.style.display = 'inline-block';
+    
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = false;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.style.maxWidth = '100%';
+    video.style.maxHeight = '80vh';
+    video.style.width = 'auto';
+    video.style.height = 'auto';
+    video.style.border = '2px solid #3b4a5a';
+    video.style.borderRadius = '8px';
+    video.style.cursor = 'pointer';
+    video.style.objectFit = 'contain';
+    video.style.background = '#000';
+
+    const source = document.createElement('source');
+    source.src = videoUrl;
+    
+    const ext = originalUrl.toLowerCase().split('.').pop();
+    if (ext === 'webm') {
+        source.type = 'video/webm';
+    } else if (ext === 'mp4') {
+        source.type = 'video/mp4';
+    } else {
+        source.type = 'video/mp4';
+    }
+    
+    video.appendChild(source);
+
+    // Индикатор видео
+    const videoIndicator = document.createElement('div');
+    videoIndicator.textContent = '🎬 VIDEO';
+    videoIndicator.style.position = 'absolute';
+    videoIndicator.style.top = '10px';
+    videoIndicator.style.left = '10px';
+    videoIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
+    videoIndicator.style.color = 'white';
+    videoIndicator.style.padding = '5px 10px';
+    videoIndicator.style.borderRadius = '15px';
+    videoIndicator.style.fontSize = '12px';
+    videoIndicator.style.zIndex = '2';
+
+    video.addEventListener('loadeddata', function() {
+        console.log('Video loaded successfully in standard mode:', videoUrl);
+    });
+
+    video.addEventListener('error', function(e) {
+        console.error('Video loading error in standard mode:', e);
+        video.style.display = 'none';
+        const fallbackImg = document.createElement('img');
+        fallbackImg.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+        fallbackImg.alt = 'Video not available';
+        fallbackImg.style.maxWidth = '100%';
+        fallbackImg.style.maxHeight = '80vh';
+        videoWrapper.appendChild(fallbackImg);
+    });
+
+    videoWrapper.appendChild(video);
+    videoWrapper.appendChild(videoIndicator);
+    container.appendChild(videoWrapper);
+    
+    // Обработчик клика для видео
+    video.addEventListener('click', () => {
+        const index = parseInt(container.dataset.index);
+        handleImageClick(index);
+    });
+}
+
+function createGifElementForStandard(container, gifUrl) {
+    const img = document.createElement('img');
+    img.src = gifUrl;
+    img.alt = 'GIF';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '80vh';
+    img.style.height = 'auto';
+    img.style.border = '2px solid #3b4a5a';
+    img.style.borderRadius = '8px';
+    img.style.cursor = 'pointer';
+    
+    img.onload = function() {
+        console.log('GIF loaded successfully in standard mode');
+    };
+    
+    img.onerror = function() {
+        console.log('GIF failed to load in standard mode');
+        img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+    };
+    
+    container.appendChild(img);
+    
+    // Обработчик клика для GIF
+    img.addEventListener('click', () => {
+        const index = parseInt(container.dataset.index);
+        handleImageClick(index);
+    });
+}
+
+function createImageElementForStandard(container, imageUrl, index) {
+    const img = document.createElement('img');
+    setupImageWithTimeout(img, imageUrl, index, 'standard');
+    container.appendChild(img);
+    
+    // Обработчик клика для изображения
+    img.addEventListener('click', () => handleImageClick(index));
 }
 
 function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
     const placeholderUrl = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
     let imageLoaded = false;
     
-    // Устанавливаем базовые стили
-    imgElement.style.maxWidth = '95vw';
-    imgElement.style.maxHeight = '95vh';
-    imgElement.style.width = 'auto';
-    imgElement.style.height = 'auto';
-    imgElement.style.borderRadius = '10px';
-    imgElement.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
-    imgElement.style.objectFit = 'contain';
+    // Устанавливаем базовые стили в зависимости от режима
+    if (mode === 'tiktok') {
+        imgElement.style.maxWidth = '95vw';
+        imgElement.style.maxHeight = '95vh';
+        imgElement.style.width = 'auto';
+        imgElement.style.height = 'auto';
+        imgElement.style.borderRadius = '10px';
+        imgElement.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+        imgElement.style.objectFit = 'contain';
+    } else if (mode === 'standard') {
+        imgElement.style.maxWidth = '100%';
+        imgElement.style.maxHeight = '80vh';
+        imgElement.style.height = 'auto';
+        imgElement.style.border = '2px solid #3b4a5a';
+        imgElement.style.borderRadius = '8px';
+        imgElement.style.cursor = 'pointer';
+    } else if (mode === 'tinder') {
+        imgElement.style.maxWidth = `${window.screen.width - 10}px`;
+        imgElement.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+        imgElement.style.height = 'auto';
+        imgElement.style.display = 'block';
+        imgElement.style.margin = '0 auto';
+    }
     
     const timeoutId = setTimeout(() => {
         if (!imageLoaded) {
@@ -3189,7 +3332,7 @@ function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
             imgElement.src = placeholderUrl;
             imgElement.alt = 'Image failed to load';
         }
-    }, 15000); // Увеличиваем таймаут до 15 секунд
+    }, 15000);
 
     imgElement.onload = function() {
         imageLoaded = true;
@@ -3420,19 +3563,104 @@ function displayImage(post) {
     container.innerHTML = '';
     document.getElementById('tinderErrorWarning').textContent = '';
 
-    const imageUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
-    if (imageUrl) {
-        const img = document.createElement('img');
-        img.style.maxWidth = `${window.screen.width - 10}px`;
-        img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
-        img.style.height = 'auto';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-        setupImageWithTimeout(img, imageUrl, 0, 'tinder');
-        container.appendChild(img);
+    const mediaType = getMediaType(post);
+    const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+    const finalMediaUrl = buildMediaUrl(mediaUrl);
+
+    if (finalMediaUrl) {
+        if (mediaType === 'video') {
+            createVideoElementForTinder(container, finalMediaUrl, mediaUrl);
+        } else if (mediaType === 'gif') {
+            createGifElementForTinder(container, finalMediaUrl);
+        } else {
+            createImageElementForTinder(container, finalMediaUrl);
+        }
     } else {
-        container.innerHTML = '<p>No valid image found.</p>';
+        container.innerHTML = '<p>No valid media found.</p>';
     }
+}
+
+// Функции для Tinder Mode
+function createVideoElementForTinder(container, videoUrl, originalUrl) {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.style.maxWidth = `${window.screen.width - 10}px`;
+    video.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+    video.style.width = 'auto';
+    video.style.height = 'auto';
+    video.style.display = 'block';
+    video.style.margin = '0 auto';
+    video.style.objectFit = 'contain';
+    video.style.background = '#000';
+
+    const source = document.createElement('source');
+    source.src = videoUrl;
+    
+    const ext = originalUrl.toLowerCase().split('.').pop();
+    if (ext === 'webm') {
+        source.type = 'video/webm';
+    } else if (ext === 'mp4') {
+        source.type = 'video/mp4';
+    } else {
+        source.type = 'video/mp4';
+    }
+    
+    video.appendChild(source);
+
+    video.addEventListener('loadeddata', function() {
+        console.log('Video loaded successfully in tinder mode:', videoUrl);
+    });
+
+    video.addEventListener('error', function(e) {
+        console.error('Video loading error in tinder mode:', e);
+        video.style.display = 'none';
+        const fallbackImg = document.createElement('img');
+        fallbackImg.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+        fallbackImg.alt = 'Video not available';
+        fallbackImg.style.maxWidth = `${window.screen.width - 10}px`;
+        fallbackImg.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+        container.appendChild(fallbackImg);
+    });
+
+    container.appendChild(video);
+}
+
+function createGifElementForTinder(container, gifUrl) {
+    const img = document.createElement('img');
+    img.src = gifUrl;
+    img.alt = 'GIF';
+    img.style.maxWidth = `${window.screen.width - 10}px`;
+    img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    img.style.display = 'block';
+    img.style.margin = '0 auto';
+    
+    img.onload = function() {
+        console.log('GIF loaded successfully in tinder mode');
+    };
+    
+    img.onerror = function() {
+        console.log('GIF failed to load in tinder mode');
+        img.src = 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/placeHolder.png';
+    };
+    
+    container.appendChild(img);
+}
+
+function createImageElementForTinder(container, imageUrl) {
+    const img = document.createElement('img');
+    img.style.maxWidth = `${window.screen.width - 10}px`;
+    img.style.maxHeight = `${Math.floor(window.screen.height * 0.7)}px`;
+    img.style.height = 'auto';
+    img.style.display = 'block';
+    img.style.margin = '0 auto';
+    setupImageWithTimeout(img, imageUrl, 0, 'tinder');
+    container.appendChild(img);
 }
 
 async function saveImage() {
@@ -3938,6 +4166,7 @@ function createImageElement(container, imageUrl, index) {
     setupImageWithTimeout(img, imageUrl, index, 'tiktok');
     container.appendChild(img);
 }
+// Выносим функцию getMediaType на глобальный уровень
 function getMediaType(post) {
     // Для e621/e926
     if (post.file && post.file.url) {
@@ -3958,6 +4187,14 @@ function getMediaType(post) {
     }
     
     return 'image';
+}
+
+// Функция для построения URL с учетом прокси (также делаем глобальной)
+function buildMediaUrl(url) {
+    if (proxyTemplate && url) {
+        return proxyTemplate.replace('[URL]', encodeURIComponent(url));
+    }
+    return url;
 }
 
 // Функция для построения URL с учетом прокси
