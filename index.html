@@ -1550,6 +1550,38 @@ body.drag-over {
 .tag-input.hidden, .input-container.hidden {
     display: none;
 }
+/* Add to existing CSS */
+#resolutionSelect {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #3b4a5a;
+    border-radius: 3px;
+    background-color: #1a252f;
+    color: #d3d7e0;
+    width: 100%;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+#resolutionSelect:focus {
+    outline: none;
+    border-color: #2a6b9b;
+}
+
+/* Theme adaptations (add similar for other themes, matching existing patterns) */
+body.theme-standard #resolutionSelect {
+    background-color: #1a252f;
+    border-color: #3b4a5a;
+    color: #d3d7e0;
+}
+
+body.theme-pink #resolutionSelect {
+    background-color: #2f1a25;
+    border-color: #4a2a35;
+    color: #e0d3d7;
+}
+
+/* ... Repeat for other themes like green, white, etc. ... */
 .setting-item {
     margin: 15px 0;
     padding: 10px;
@@ -2359,6 +2391,16 @@ button:hover {
         <option value="only">Only videos</option>
     </select>
 </div>
+<!-- Insert this inside the .modal-content of #settingsModal, after other .setting-item divs -->
+<div class="setting-item" id="resolutionSetting">
+    <label for="resolutionSelect">Default Media Resolution:</label>
+    <select id="resolutionSelect">
+        <option value="original">Original (High Quality, Slow Load)</option>
+        <option value="sample">Sample (Medium Quality, Default)</option>
+        <option value="preview">Preview (Low Quality, Fast Load)</option>
+    </select>
+    <p style="font-size: 12px; opacity: 0.7;">Affects image/video loading. Fallback to original if unavailable.</p>
+</div>
             <div class="setting-item">
                 <label for="delayInput">Delay before next image (ms):</label>
                 <input type="number" id="delayInput" placeholder="3000" min="1000" max="30000" step="1000" style="width: 100%; margin-top: 5px;">
@@ -2457,7 +2499,16 @@ document.getElementById('videoFilter').value = videoFilter;
     // Загрузка URL маскотов
     const mascotDomainUrl = getLocalStorage('mascotDomainUrl') || 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760458897.png';
     const mascotModeUrl = getLocalStorage('mascotModeUrl') || 'https://raw.githubusercontent.com/maxkojju/maxkojju.github.io/main/1760459670.png';
-    
+    // Add inside loadSettings(), after loading other settings
+defaultResolution = localStorage.getItem('defaultResolution') || 'sample';
+document.getElementById('resolutionSelect').value = defaultResolution;
+
+// Add visibility logic (if updateSettingsVisibility() exists, call it; else add here)
+if (domain !== 'e621.net' && domain !== 'e926.net') {
+    document.getElementById('resolutionSetting').style.display = 'none';
+} else {
+    document.getElementById('resolutionSetting').style.display = 'block';
+}
     setTheme(savedTheme);
     document.getElementById('filterNsfwToggle').checked = filterNsfw;
     document.getElementById('autoOpenSavedToggle').checked = autoOpenSaved;
@@ -2497,7 +2548,19 @@ function updateSettingsVisibility() {
     }
     nsfwSetting.classList.remove('disabled'); // NSFW filter available for all domains
 }
-
+function getResolutionUrl(post) {
+    if (domain !== 'e621.net' && domain !== 'e926.net') {
+        return (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+    }
+    
+    // For e621/e926: Try selected resolution, fallback to original > sample > preview
+    const resolutions = [defaultResolution, 'file', 'sample', 'preview'];
+    for (const res of resolutions) {
+        const url = (res === 'original' ? post.file?.url : post[res]?.url);
+        if (url) return url;
+    }
+    return null; // Fallback if none
+}
 function saveSettings() {
     filterNsfw = document.getElementById('filterNsfwToggle').checked;
     autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
@@ -2521,11 +2584,16 @@ setLocalStorage('videoFilter', videoFilter);
     setLocalStorage('delayBeforeNextImage', delayBeforeNextImage);
     setLocalStorage('blacklistTags', blacklistTags);
     
-    // Сохранение URL маскотов
+  const resolutionSelect = document.getElementById('resolutionSelect');
+  if (resolutionSelect) {
+    defaultResolution = resolutionSelect.value;
+    localStorage.setItem('defaultResolution', defaultResolution);
+}
+  
     setLocalStorage('mascotDomainUrl', mascotDomainUrl);
     setLocalStorage('mascotModeUrl', mascotModeUrl);
     
-    // Применение новых маскотов
+  
     applyMascotImages(mascotDomainUrl, mascotModeUrl);
     
     alert('Settings saved!');
@@ -3387,7 +3455,7 @@ function displayPosts(posts) {
     const container = document.getElementById('standardPostContainer');
     container.innerHTML = '';
     document.getElementById('standardErrorWarning').textContent = '';
-
+    
     posts.forEach((post, index) => {
         if (post.file && post.file.url || post.url && domain === 'nekos.moe') {
             const postDiv = document.createElement('div');
@@ -3395,8 +3463,10 @@ function displayPosts(posts) {
             postDiv.dataset.index = index;
             
             const mediaType = getMediaType(post);
-            const mediaUrl = domain === 'nekos.moe' ? post.url : post.file.url;
-            const finalMediaUrl = buildMediaUrl(mediaUrl);
+         
+const mediaUrl = getResolutionUrl(post);
+const finalMediaUrl = buildMediaUrl(mediaUrl);
+// ... rest unchanged
 
             if (finalMediaUrl) {
                 if (mediaType === 'video') {
@@ -3805,8 +3875,10 @@ function displayImage(post) {
     document.getElementById('tinderErrorWarning').textContent = '';
 
     const mediaType = getMediaType(post);
-    const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
-    const finalMediaUrl = buildMediaUrl(mediaUrl);
+   // Replace: const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+const mediaUrl = getResolutionUrl(post);
+const finalMediaUrl = buildMediaUrl(mediaUrl);
+// ... rest unchanged
 
     if (finalMediaUrl) {
         if (mediaType === 'video') {
@@ -4276,8 +4348,10 @@ function displayTikTokPosts() {
         postDiv.dataset.index = index;
 
         const mediaType = getMediaType(post);
-        const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
-        const finalMediaUrl = buildMediaUrl(mediaUrl);
+       // Replace: const mediaUrl = (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+const mediaUrl = getResolutionUrl(post);
+const finalMediaUrl = buildMediaUrl(mediaUrl);
+// ... rest unchanged
 
         if (finalMediaUrl) {
             if (mediaType === 'video') {
