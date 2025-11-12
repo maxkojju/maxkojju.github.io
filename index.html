@@ -2469,6 +2469,8 @@ let currentTagsTikTok = '';
 let isTikTokLoading = false;
 let tiktokScrollEnabled = false; // По умолчанию отключаем скролл до поиска
 let tiktokInitialized = false; // Флаг инициализации
+let domainTimeoutId = null;
+const DOMAIN_TIMEOUT_DURATION = 5000; // 5 минут в миллисекундах
 
 
 function clearCookies() {
@@ -2549,18 +2551,31 @@ function updateSettingsVisibility() {
     nsfwSetting.classList.remove('disabled'); // NSFW filter available for all domains
 }
 function getResolutionUrl(post) {
-    if (domain !== 'e621.net' && domain !== 'e926.net') {
-        return (domain === 'waifu.im' || domain === 'nekos.moe') ? post.url : post.file?.url;
+    // Для nekos.moe и waifu.im всегда возвращаем основной URL, без учёта разрешения и видео
+    if (domain === 'nekos.moe' || domain === 'waifu.im') {
+        return post.url || post.file?.url || null;
     }
-    
-    // For e621/e926: Try selected resolution, fallback to original > sample > preview
-    const resolutions = [defaultResolution, 'file', 'sample', 'preview'];
-    for (const res of resolutions) {
-        const url = (res === 'original' ? post.file?.url : post[res]?.url);
-        if (url) return url;
+
+    if (!post.file) return post.url || null;
+
+    const size = document.getElementById('resolutionSelect')?.value || 'original';
+    const mediaType = getMediaType(post);
+
+    // Видео всегда в оригинале
+    if (mediaType === 'video' && post.file?.url) {
+        return post.file.url;
     }
-    return null; // Fallback if none
+
+    // Выбор разрешения для e621/e926
+    if (size === 'original' && post.file?.url) return post.file.url;
+    if (size === 'sample' && post.sample?.url) return post.sample.url;
+    if (size === 'preview' && post.preview?.url) return post.preview.url;
+
+    // fallback
+    return post.file.url || post.sample?.url || post.preview?.url || null;
 }
+
+
 function saveSettings() {
     filterNsfw = document.getElementById('filterNsfwToggle').checked;
     autoOpenSaved = document.getElementById('autoOpenSavedToggle').checked;
@@ -2817,10 +2832,12 @@ function buildApiUrl(tags, limit) {
 
     // Добавляем фильтр видео
     const videoFilter = getLocalStorage('videoFilter') || 'allow';
-    if (videoFilter === 'block') {
-        tagsQuery = tagsQuery ? `${tagsQuery} -type:webm` : '-type:webm';
-    } else if (videoFilter === 'only') {
-        tagsQuery = tagsQuery ? `${tagsQuery} type:webm` : 'type:webm';
+     if (domain === 'e621.net' || domain === 'e926.net') {
+        if (videoFilter === 'block') {
+            tagsQuery = tagsQuery ? `${tagsQuery} -type:webm` : '-type:webm';
+        } else if (videoFilter === 'only') {
+            tagsQuery = tagsQuery ? `${tagsQuery} type:webm` : 'type:webm';
+        }
     }
     // Для 'allow' ничего не добавляем
 
@@ -3643,7 +3660,7 @@ function setupImageWithTimeout(imgElement, imageUrl, index, mode) {
             imgElement.src = placeholderUrl;
             imgElement.alt = 'Image failed to load';
         }
-    }, 15000);
+    }, 25000);
 
     imgElement.onload = function() {
         imageLoaded = true;
@@ -3964,7 +3981,45 @@ function createGifElementForTinder(container, gifUrl) {
     
     container.appendChild(img);
 }
-
+function checkDomainAvailability(domain) {
+    // Очищаем предыдущий таймер
+    if (domainTimeoutId) {
+        clearTimeout(domainTimeoutId);
+    }
+    
+    // Создаем URL для проверки (используем favicon или простой запрос)
+    let testUrl;
+    if (domain === 'nekos.moe') {
+        testUrl = 'https://nekos.moe/favicon.ico';
+    } else if (domain === 'waifu.im') {
+        testUrl = 'https://waifu.im/favicon.ico';
+    } else {
+        testUrl = `https://${domain}/favicon.ico`;
+    }
+    
+    // Запускаем проверку
+    const pingPromise = fetch(testUrl, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-cache'
+    }).then(() => {
+        // Домен доступен - очищаем таймер
+        clearTimeout(domainTimeoutId);
+        console.log(`Domain ${domain} is available`);
+    }).catch(error => {
+        console.log(`Domain ${domain} is not available:`, error);
+    });
+    
+    // Устанавливаем таймер на 5 секунд
+    domainTimeoutId = setTimeout(() => {
+        // Если через 5 секунд промис еще не завершился, показываем модальное окно
+        pingPromise.finally(() => {
+            // Если промис завершился после таймаута, но до этого показали модалку,
+            // можно проверить статус и скрыть модалку если домен стал доступен
+        });
+        showDomainBlockedModal(domain);
+    }, 5000);
+}
 function createImageElementForTinder(container, imageUrl) {
     const img = document.createElement('img');
     img.style.maxWidth = `${window.screen.width - 10}px`;
@@ -4025,6 +4080,9 @@ function hideFixLink() {
 function selectDomain(selectedDomain) {
     domain = selectedDomain;
     
+    // Запускаем проверку доступности домена
+    checkDomainAvailability(selectedDomain);
+    
     const domainContainer = document.getElementById('domainContainer');
     const modeContainer = document.getElementById('modeContainer');
     const domainContent = domainContainer.querySelector('.container');
@@ -4080,7 +4138,73 @@ function selectDomain(selectedDomain) {
     // Обновляем видимость настроек
     updateSettingsVisibility();
 }
+function startDomainTimeoutCheck(domain) {
+    // Очищаем предыдущий таймер, если он был
+    if (domainTimeoutId) {
+        clearTimeout(domainTimeoutId);
+    }
+    
+    // Устанавливаем новый таймер
+    domainTimeoutId = setTimeout(() => {
+        showDomainBlockedModal(domain);
+    }, DOMAIN_TIMEOUT_DURATION);
+}
 
+// Функция для отображения модального окна о блокировке домена
+function showDomainBlockedModal(domain) {
+    const modal = document.getElementById('domainBlockedModal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    const newModal = document.createElement('div');
+    newModal.id = 'domainBlockedModal';
+    newModal.className = 'modal';
+    newModal.style.display = 'flex';
+    
+    newModal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <h2 style="color: #d3d7e0; margin-bottom: 20px;">Connection Issue</h2>
+            <div style="font-size: 18px; line-height: 1.5; margin-bottom: 25px;">
+                <big><strong>you live in the best country in the world, and all the other countries are just jealous of you</strong></big>
+                <br><br>
+                we could not connect to the <strong>${domain}</strong> domain, it is probably blocked in your country. you can find out about the solution here 
+                <a href="https://bestofe6.ru/fix" target="_blank" style="color: #2a6b9b; text-decoration: underline;">bestofe6.ru/fix</a>
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="nav-button" onclick="continueAnyway()" style="padding: 12px 24px; font-size: 16px;">
+                    I know what I'm doing, continue
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(newModal);
+}
+
+
+// Функция для продолжения работы при блокировке
+
+function continueAnyway() {
+    const modal = document.getElementById('domainBlockedModal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Сбрасываем таймер
+    if (domainTimeoutId) {
+        clearTimeout(domainTimeoutId);
+        domainTimeoutId = null;
+    }
+}
+
+// Функция для сброса таймера при успешном подключении
+function resetDomainTimeout() {
+    if (domainTimeoutId) {
+        clearTimeout(domainTimeoutId);
+        domainTimeoutId = null;
+    }
+}
 function startTinderMode() {
     document.getElementById('modeContainer').classList.remove('active');
     document.getElementById('tinderContainer').classList.add('active');
@@ -4699,8 +4823,16 @@ function openTikTokSource() {
         window.open(sourceUrl, '_blank');
     }
 }
-
-
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    return originalFetch.apply(this, args).then(response => {
+        // Если запрос успешен и это API запрос к выбранному домену, сбрасываем таймер
+        if (response.ok && args[0] && typeof args[0] === 'string' && args[0].includes(domain)) {
+            resetDomainTimeout();
+        }
+        return response;
+    });
+};
 // Вспомогательная функция для показа временных сообщений
 function showTemporaryMessage(message) {
     const msgElement = document.createElement('div');
