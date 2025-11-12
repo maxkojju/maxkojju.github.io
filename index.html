@@ -4164,6 +4164,11 @@ function showDomainBlockedModal(domain) {
     
     newModal.innerHTML = `
         <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <img src="https://github.com/maxkojju/maxkojju.github.io/blob/main/1984.jpg?raw=true" 
+                     alt="1984" 
+                     style="max-width: 200px; max-height: 150px; border-radius: 8px; margin: 0 auto;">
+            </div>
             <h2 style="color: #d3d7e0; margin-bottom: 20px;">Connection Issue</h2>
             <div style="font-size: 18px; line-height: 1.5; margin-bottom: 25px;">
                 <big><strong>you live in the best country in the world, and all the other countries are just jealous of you</strong></big>
@@ -4178,6 +4183,7 @@ function showDomainBlockedModal(domain) {
             </div>
         </div>
     `;
+    
     
     document.body.appendChild(newModal);
 }
